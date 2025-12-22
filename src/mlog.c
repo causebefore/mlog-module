@@ -12,9 +12,9 @@
 #define LOG_TAG "mlog"
 
 #include <mlog.h>
-#include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #if !defined(MLOG_OUTPUT_LVL)
 #error "Please configure static output log level (in mlog_cfg.h)"
@@ -51,31 +51,31 @@
  * more information on https://en.wikipedia.org/wiki/ANSI_escape_code
  */
 #define CSI_START "\033["
-#define CSI_END "\033[0m"
+#define CSI_END   "\033[0m"
 /* output log front color */
-#define F_BLACK "30;"
-#define F_RED "31;"
-#define F_GREEN "32;"
-#define F_YELLOW "33;"
-#define F_BLUE "34;"
+#define F_BLACK   "30;"
+#define F_RED     "31;"
+#define F_GREEN   "32;"
+#define F_YELLOW  "33;"
+#define F_BLUE    "34;"
 #define F_MAGENTA "35;"
-#define F_CYAN "36;"
-#define F_WHITE "37;"
+#define F_CYAN    "36;"
+#define F_WHITE   "37;"
 /* output log background color */
 #define B_NULL
-#define B_BLACK "40;"
-#define B_RED "41;"
-#define B_GREEN "42;"
-#define B_YELLOW "43;"
-#define B_BLUE "44;"
+#define B_BLACK   "40;"
+#define B_RED     "41;"
+#define B_GREEN   "42;"
+#define B_YELLOW  "43;"
+#define B_BLUE    "44;"
 #define B_MAGENTA "45;"
-#define B_CYAN "46;"
-#define B_WHITE "47;"
+#define B_CYAN    "46;"
+#define B_WHITE   "47;"
 /* output log fonts style */
-#define S_BOLD "1m"
+#define S_BOLD      "1m"
 #define S_UNDERLINE "4m"
-#define S_BLINK "5m"
-#define S_NORMAL "22m"
+#define S_BLINK     "5m"
+#define S_NORMAL    "22m"
 /* output log default color definition: [front color] + [background color] + [show style] */
 #ifndef MLOG_COLOR_ASSERT
 #define MLOG_COLOR_ASSERT (F_MAGENTA B_NULL S_NORMAL)
@@ -103,22 +103,22 @@ static MLogger mlog;
 static char log_buf[MLOG_LINE_BUF_SIZE] = {0};
 /* level output info */
 static const char *level_output_info[] = {
-    [MLOG_LVL_ASSERT] = "A/",
-    [MLOG_LVL_ERROR] = "E/",
-    [MLOG_LVL_WARN] = "W/",
-    [MLOG_LVL_INFO] = "I/",
-    [MLOG_LVL_DEBUG] = "D/",
+    [MLOG_LVL_ASSERT]  = "A/",
+    [MLOG_LVL_ERROR]   = "E/",
+    [MLOG_LVL_WARN]    = "W/",
+    [MLOG_LVL_INFO]    = "I/",
+    [MLOG_LVL_DEBUG]   = "D/",
     [MLOG_LVL_VERBOSE] = "V/",
 };
 
 #ifdef MLOG_COLOR_ENABLE
 /* color output info */
 static const char *color_output_info[] = {
-    [MLOG_LVL_ASSERT] = MLOG_COLOR_ASSERT,
-    [MLOG_LVL_ERROR] = MLOG_COLOR_ERROR,
-    [MLOG_LVL_WARN] = MLOG_COLOR_WARN,
-    [MLOG_LVL_INFO] = MLOG_COLOR_INFO,
-    [MLOG_LVL_DEBUG] = MLOG_COLOR_DEBUG,
+    [MLOG_LVL_ASSERT]  = MLOG_COLOR_ASSERT,
+    [MLOG_LVL_ERROR]   = MLOG_COLOR_ERROR,
+    [MLOG_LVL_WARN]    = MLOG_COLOR_WARN,
+    [MLOG_LVL_INFO]    = MLOG_COLOR_INFO,
+    [MLOG_LVL_DEBUG]   = MLOG_COLOR_DEBUG,
     [MLOG_LVL_VERBOSE] = MLOG_COLOR_VERBOSE,
 };
 #endif /* MLOG_COLOR_ENABLE */
@@ -157,7 +157,7 @@ MlogErrCode mlog_init(void)
     /* enable the output lock */
     mlog_output_lock_enabled(true);
     /* output locked status initialize */
-    mlog.output_is_locked_before_enable = false;
+    mlog.output_is_locked_before_enable  = false;
     mlog.output_is_locked_before_disable = false;
 
 #ifdef MLOG_COLOR_ENABLE
@@ -384,7 +384,7 @@ static void mlog_set_filter_tag_lvl_default(void)
     for (i = 0; i < MLOG_FILTER_TAG_LVL_MAX_NUM; i++)
     {
         memset(mlog.filter.tag_lvl[i].tag, '\0', MLOG_FILTER_TAG_MAX_LEN + 1);
-        mlog.filter.tag_lvl[i].level = MLOG_FILTER_LVL_SILENT;
+        mlog.filter.tag_lvl[i].level        = MLOG_FILTER_LVL_SILENT;
         mlog.filter.tag_lvl[i].tag_use_flag = false;
     }
 }
@@ -410,7 +410,7 @@ static void mlog_set_filter_tag_lvl_default(void)
 void mlog_set_filter_tag_lvl(const char *tag, uint8_t level)
 {
     MLOG_ASSERT(level <= MLOG_LVL_VERBOSE);
-    MLOG_ASSERT(tag != ((void *)0));
+    MLOG_ASSERT(tag != ((void *) 0));
     uint8_t i = 0;
 
     if (!mlog.init_ok)
@@ -454,7 +454,7 @@ void mlog_set_filter_tag_lvl(const char *tag, uint8_t level)
                 if (mlog.filter.tag_lvl[i].tag_use_flag == false)
                 {
                     strncpy(mlog.filter.tag_lvl[i].tag, tag, MLOG_FILTER_TAG_MAX_LEN);
-                    mlog.filter.tag_lvl[i].level = level;
+                    mlog.filter.tag_lvl[i].level        = level;
                     mlog.filter.tag_lvl[i].tag_use_flag = true;
                     break;
                 }
@@ -474,8 +474,8 @@ void mlog_set_filter_tag_lvl(const char *tag, uint8_t level)
  */
 uint8_t mlog_get_filter_tag_lvl(const char *tag)
 {
-    MLOG_ASSERT(tag != ((void *)0));
-    uint8_t i = 0;
+    MLOG_ASSERT(tag != ((void *) 0));
+    uint8_t i     = 0;
     uint8_t level = MLOG_FILTER_LVL_ALL;
 
     if (!mlog.init_ok)
@@ -508,8 +508,8 @@ uint8_t mlog_get_filter_tag_lvl(const char *tag)
 void mlog_raw_output(const char *format, ...)
 {
     va_list args;
-    size_t log_len = 0;
-    int fmt_result;
+    size_t  log_len = 0;
+    int     fmt_result;
 
     /* check output enabled */
     if (!mlog.output_enabled)
@@ -560,18 +560,23 @@ void mlog_raw_output(const char *format, ...)
  * @param ... args
  *
  */
-void mlog_output(uint8_t level, const char *tag, const char *file, const char *func,
-                 const long line, const char *format, ...)
+void mlog_output(uint8_t     level,
+                 const char *tag,
+                 const char *file,
+                 const char *func,
+                 const long  line,
+                 const char *format,
+                 ...)
 {
     extern const char *mlog_port_get_time(void);
     extern const char *mlog_port_get_p_info(void);
     extern const char *mlog_port_get_t_info(void);
 
-    size_t tag_len = strlen(tag), log_len = 0, newline_len = strlen(MLOG_NEWLINE_SIGN);
-    char line_num[MLOG_LINE_NUM_MAX_LEN + 1] = {0};
-    char tag_sapce[MLOG_FILTER_TAG_MAX_LEN / 2 + 1] = {0};
+    size_t  tag_len = strlen(tag), log_len = 0, newline_len = strlen(MLOG_NEWLINE_SIGN);
+    char    line_num[MLOG_LINE_NUM_MAX_LEN + 1]        = {0};
+    char    tag_sapce[MLOG_FILTER_TAG_MAX_LEN / 2 + 1] = {0};
     va_list args;
-    int fmt_result;
+    int     fmt_result;
 
     MLOG_ASSERT(level <= MLOG_LVL_VERBOSE);
 
@@ -840,7 +845,7 @@ int8_t mlog_find_lvl(const char *log)
 
 #ifdef MLOG_COLOR_ENABLE
     uint8_t i;
-    size_t csi_start_len = strlen(CSI_START);
+    size_t  csi_start_len = strlen(CSI_START);
     for (i = 0; i < MLOG_LVL_TOTAL_NUM; i++)
     {
         if (!strncmp(color_output_info[i], log + csi_start_len, strlen(color_output_info[i])))
@@ -853,20 +858,20 @@ int8_t mlog_find_lvl(const char *log)
 #else
     switch (log[0])
     {
-    case 'A':
-        return MLOG_LVL_ASSERT;
-    case 'E':
-        return MLOG_LVL_ERROR;
-    case 'W':
-        return MLOG_LVL_WARN;
-    case 'I':
-        return MLOG_LVL_INFO;
-    case 'D':
-        return MLOG_LVL_DEBUG;
-    case 'V':
-        return MLOG_LVL_VERBOSE;
-    default:
-        return -1;
+        case 'A':
+            return MLOG_LVL_ASSERT;
+        case 'E':
+            return MLOG_LVL_ERROR;
+        case 'W':
+            return MLOG_LVL_WARN;
+        case 'I':
+            return MLOG_LVL_INFO;
+        case 'D':
+            return MLOG_LVL_DEBUG;
+        case 'V':
+            return MLOG_LVL_VERBOSE;
+        default:
+            return -1;
     }
 #endif
 }
@@ -920,13 +925,13 @@ const char *mlog_find_tag(const char *log, uint8_t lvl, size_t *tag_len)
  */
 void mlog_hexdump(const char *name, uint8_t width, const void *buf, uint16_t size)
 {
-#define __is_print(ch) ((unsigned int)((ch) - ' ') < 127u - ' ')
+#define __is_print(ch) ((unsigned int) ((ch) - ' ') < 127u - ' ')
 
-    uint16_t i, j;
-    uint16_t log_len = 0;
-    const uint8_t *buf_p = buf;
-    char dump_string[8] = {0};
-    int fmt_result;
+    uint16_t       i, j;
+    uint16_t       log_len        = 0;
+    const uint8_t *buf_p          = buf;
+    char           dump_string[8] = {0};
+    int            fmt_result;
 
     if (!mlog.output_enabled)
     {

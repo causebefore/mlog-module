@@ -64,13 +64,15 @@ size_t mlog_cpyln(char *line, const char *log, size_t len)
  */
 void *mlog_memcpy(void *dst, const void *src, size_t count)
 {
-    char *tmp = (char *)dst, *s = (char *)src;
+    char *tmp = (char *) dst, *s = (char *) src;
 
     assert(dst);
     assert(src);
 
     while (count--)
+    {
         *tmp++ = *s++;
+    }
 
     return dst;
 }
@@ -80,12 +82,14 @@ void *mlog_memcpy(void *dst, const void *src, size_t count)
  */
 void *mlog_memset(void *dst, int val, size_t count)
 {
-    char *tmp = (char *)dst;
+    char *tmp = (char *) dst;
 
     assert(dst);
 
     while (count--)
-        *tmp++ = (char)val;
+    {
+        *tmp++ = (char) val;
+    }
 
     return dst;
 }

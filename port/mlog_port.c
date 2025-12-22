@@ -9,12 +9,12 @@
  * Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
  */
 
-#include <mlog.h>
-#include "common.h"
 #include "SEGGER_RTT.h"
-#include "stm32f10x.h"
 #include "bsp_timer.h"
 #include "bsp_usart.h"
+#include "common.h"
+#include "stm32f10x.h"
+#include <mlog.h>
 /**
  * MLogger port initialize
  *
@@ -35,7 +35,6 @@ MlogErrCode mlog_port_init(void)
  */
 void mlog_port_deinit(void)
 {
-
     /* add your code here */
 }
 
@@ -47,7 +46,6 @@ void mlog_port_deinit(void)
  */
 void mlog_port_output(const char *log, size_t size)
 {
-
     /* add your code here */
 
     SEGGER_RTT_SetTerminal(1);
@@ -59,7 +57,6 @@ void mlog_port_output(const char *log, size_t size)
  */
 void mlog_port_output_lock(void)
 {
-
     /* add your code here */
 }
 
@@ -68,7 +65,6 @@ void mlog_port_output_lock(void)
  */
 void mlog_port_output_unlock(void)
 {
-
     /* add your code here */
 }
 

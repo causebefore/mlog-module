@@ -13,9 +13,9 @@
 #define __INC_MLOG_H
 
 #include <mlog_cfg.h>
-#include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -23,16 +23,16 @@ extern "C"
 #endif
 
 /* output log's level */
-#define MLOG_LVL_ASSERT 0
-#define MLOG_LVL_ERROR 1
-#define MLOG_LVL_WARN 2
-#define MLOG_LVL_INFO 3
-#define MLOG_LVL_DEBUG 4
+#define MLOG_LVL_ASSERT  0
+#define MLOG_LVL_ERROR   1
+#define MLOG_LVL_WARN    2
+#define MLOG_LVL_INFO    3
+#define MLOG_LVL_DEBUG   4
 #define MLOG_LVL_VERBOSE 5
 
 /* the output silent level and all level for filter setting */
 #define MLOG_FILTER_LVL_SILENT MLOG_LVL_ASSERT
-#define MLOG_FILTER_LVL_ALL MLOG_LVL_VERBOSE
+#define MLOG_FILTER_LVL_ALL    MLOG_LVL_VERBOSE
 
 /* output log's level total number */
 #define MLOG_LVL_TOTAL_NUM 6
@@ -57,7 +57,7 @@ extern "C"
         }                                                                                       \
     }
 #else
-#define MLOG_ASSERT(EXPR) ((void)0);
+#define MLOG_ASSERT(EXPR) ((void) 0);
 #endif
 
 #ifndef MLOG_OUTPUT_ENABLE
@@ -135,34 +135,35 @@ extern "C"
     /* all formats index */
     typedef enum
     {
-        MLOG_FMT_LVL = 1 << 0,    /**< level */
-        MLOG_FMT_TAG = 1 << 1,    /**< tag */
-        MLOG_FMT_TIME = 1 << 2,   /**< current time */
+        MLOG_FMT_LVL    = 1 << 0, /**< level */
+        MLOG_FMT_TAG    = 1 << 1, /**< tag */
+        MLOG_FMT_TIME   = 1 << 2, /**< current time */
         MLOG_FMT_P_INFO = 1 << 3, /**< process info */
         MLOG_FMT_T_INFO = 1 << 4, /**< thread info */
-        MLOG_FMT_DIR = 1 << 5,    /**< file directory and name */
-        MLOG_FMT_FUNC = 1 << 6,   /**< function name */
-        MLOG_FMT_LINE = 1 << 7,   /**< line number */
+        MLOG_FMT_DIR    = 1 << 5, /**< file directory and name */
+        MLOG_FMT_FUNC   = 1 << 6, /**< function name */
+        MLOG_FMT_LINE   = 1 << 7, /**< line number */
     } MlogFmtIndex;
 
 /* macro definition for all formats */
-#define MLOG_FMT_ALL (MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME | MLOG_FMT_P_INFO | MLOG_FMT_T_INFO | \
-                      MLOG_FMT_DIR | MLOG_FMT_FUNC | MLOG_FMT_LINE)
+#define MLOG_FMT_ALL                                                                                                  \
+    (MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME | MLOG_FMT_P_INFO | MLOG_FMT_T_INFO | MLOG_FMT_DIR | MLOG_FMT_FUNC | \
+     MLOG_FMT_LINE)
 
     /* output log's tag filter */
     typedef struct
     {
         uint8_t level;
-        char tag[MLOG_FILTER_TAG_MAX_LEN + 1];
-        bool tag_use_flag; /**< false : tag is no used   true: tag is used */
+        char    tag[MLOG_FILTER_TAG_MAX_LEN + 1];
+        bool    tag_use_flag; /**< false : tag is no used   true: tag is used */
     } MlogTagLvlFilter, *MlogTagLvlFilter_t;
 
     /* output log's filter */
     typedef struct
     {
-        uint8_t level;
-        char tag[MLOG_FILTER_TAG_MAX_LEN + 1];
-        char keyword[MLOG_FILTER_KW_MAX_LEN + 1];
+        uint8_t          level;
+        char             tag[MLOG_FILTER_TAG_MAX_LEN + 1];
+        char             keyword[MLOG_FILTER_KW_MAX_LEN + 1];
         MlogTagLvlFilter tag_lvl[MLOG_FILTER_TAG_LVL_MAX_NUM];
     } MlogFilter, *MlogFilter_t;
 
@@ -170,12 +171,12 @@ extern "C"
     typedef struct
     {
         MlogFilter filter;
-        size_t enabled_fmt_set[MLOG_LVL_TOTAL_NUM];
-        bool init_ok;
-        bool output_enabled;
-        bool output_lock_enabled;
-        bool output_is_locked_before_enable;
-        bool output_is_locked_before_disable;
+        size_t     enabled_fmt_set[MLOG_LVL_TOTAL_NUM];
+        bool       init_ok;
+        bool       output_enabled;
+        bool       output_lock_enabled;
+        bool       output_is_locked_before_enable;
+        bool       output_is_locked_before_disable;
 
 #ifdef MLOG_COLOR_ENABLE
         bool text_color_enabled;
@@ -191,29 +192,34 @@ extern "C"
 
     /* mlog.c */
     MlogErrCode mlog_init(void);
-    void mlog_deinit(void);
-    void mlog_start(void);
-    void mlog_stop(void);
-    void mlog_set_output_enabled(bool enabled);
-    bool mlog_get_output_enabled(void);
-    void mlog_set_text_color_enabled(bool enabled);
-    bool mlog_get_text_color_enabled(void);
-    void mlog_set_fmt(uint8_t level, size_t set);
-    void mlog_set_filter(uint8_t level, const char *tag, const char *keyword);
-    void mlog_set_filter_lvl(uint8_t level);
-    void mlog_set_filter_tag(const char *tag);
-    void mlog_set_filter_kw(const char *keyword);
-    void mlog_set_filter_tag_lvl(const char *tag, uint8_t level);
-    uint8_t mlog_get_filter_tag_lvl(const char *tag);
-    void mlog_raw_output(const char *format, ...);
-    void mlog_output(uint8_t level, const char *tag, const char *file, const char *func,
-                     const long line, const char *format, ...);
-    void mlog_output_lock_enabled(bool enabled);
+    void        mlog_deinit(void);
+    void        mlog_start(void);
+    void        mlog_stop(void);
+    void        mlog_set_output_enabled(bool enabled);
+    bool        mlog_get_output_enabled(void);
+    void        mlog_set_text_color_enabled(bool enabled);
+    bool        mlog_get_text_color_enabled(void);
+    void        mlog_set_fmt(uint8_t level, size_t set);
+    void        mlog_set_filter(uint8_t level, const char *tag, const char *keyword);
+    void        mlog_set_filter_lvl(uint8_t level);
+    void        mlog_set_filter_tag(const char *tag);
+    void        mlog_set_filter_kw(const char *keyword);
+    void        mlog_set_filter_tag_lvl(const char *tag, uint8_t level);
+    uint8_t     mlog_get_filter_tag_lvl(const char *tag);
+    void        mlog_raw_output(const char *format, ...);
+    void        mlog_output(uint8_t     level,
+                            const char *tag,
+                            const char *file,
+                            const char *func,
+                            const long  line,
+                            const char *format,
+                            ...);
+    void        mlog_output_lock_enabled(bool enabled);
     extern void (*mlog_assert_hook)(const char *expr, const char *func, size_t line);
-    void mlog_assert_set_hook(void (*hook)(const char *expr, const char *func, size_t line));
-    int8_t mlog_find_lvl(const char *log);
+    void        mlog_assert_set_hook(void (*hook)(const char *expr, const char *func, size_t line));
+    int8_t      mlog_find_lvl(const char *log);
     const char *mlog_find_tag(const char *log, uint8_t lvl, size_t *tag_len);
-    void mlog_hexdump(const char *name, uint8_t width, const void *buf, uint16_t size);
+    void        mlog_hexdump(const char *name, uint8_t width, const void *buf, uint16_t size);
 
 #define mlog_a(tag, ...) mlog_assert(tag, __VA_ARGS__)
 #define mlog_e(tag, ...) mlog_error(tag, __VA_ARGS__)
@@ -235,32 +241,32 @@ extern "C"
 #if LOG_LVL >= MLOG_LVL_ASSERT
 #define log_a(...) mlog_a(LOG_TAG, __VA_ARGS__)
 #else
-#define log_a(...) ((void)0);
+#define log_a(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_ERROR
 #define log_e(...) mlog_e(LOG_TAG, __VA_ARGS__)
 #else
-#define log_e(...) ((void)0);
+#define log_e(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_WARN
 #define log_w(...) mlog_w(LOG_TAG, __VA_ARGS__)
 #else
-#define log_w(...) ((void)0);
+#define log_w(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_INFO
 #define log_i(...) mlog_i(LOG_TAG, __VA_ARGS__)
 #else
-#define log_i(...) ((void)0);
+#define log_i(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_DEBUG
 #define log_d(...) mlog_d(LOG_TAG, __VA_ARGS__)
 #else
-#define log_d(...) ((void)0);
+#define log_d(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_VERBOSE
 #define log_v(...) mlog_v(LOG_TAG, __VA_ARGS__)
 #else
-#define log_v(...) ((void)0);
+#define log_v(...) ((void) 0);
 #endif
 
 /* assert API short definition */
@@ -273,15 +279,15 @@ extern "C"
     void mlog_flush(void);
 
     /* mlog_async.c */
-    void mlog_async_enabled(bool enabled);
+    void   mlog_async_enabled(bool enabled);
     size_t mlog_async_get_log(char *log, size_t size);
     size_t mlog_async_get_line_log(char *log, size_t size);
 
     /* mlog_utils.c */
     size_t mlog_strcpy(size_t cur_len, char *dst, const char *src);
     size_t mlog_cpyln(char *line, const char *log, size_t len);
-    void *mlog_memcpy(void *dst, const void *src, size_t count);
-    void *mlog_memset(void *dst, int val, size_t count);
+    void  *mlog_memcpy(void *dst, const void *src, size_t count);
+    void  *mlog_memset(void *dst, int val, size_t count);
 #ifdef __cplusplus
 }
 #endif

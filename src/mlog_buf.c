@@ -4,7 +4,8 @@
  * @LastEditors: liu lbq08@foxmail.com
  * @LastEditTime: 2025-12-09 17:32:38
  * @FilePath: \RVMDK（uv5）c:\Users\lbqdl\Desktop\USART1接发\User\Mlog\src\mlog_buf.c
- * @Description: mlog的缓冲区输出模式代码文件，实现日志缓冲区输出功能，适合用于高频率日志输出场景，减少输出设备的调用次数，提高性能。
+ * @Description:
+ * mlog的缓冲区输出模式代码文件，实现日志缓冲区输出功能，适合用于高频率日志输出场景，减少输出设备的调用次数，提高性能。
  *
  * Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
  */
@@ -72,7 +73,9 @@ void mlog_buf_output(const char *log, size_t size)
 void mlog_flush(void)
 {
     if (buf_write_size == 0)
+    {
         return;
+    }
     /* lock output */
     mlog_output_lock();
     /* output log */
