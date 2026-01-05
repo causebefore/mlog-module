@@ -9,15 +9,16 @@
  * Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
  */
 
-#include <mlog.h>
 #include <string.h>
+
+#include <mlog.h>
 
 /**
  * 实现字符串拷贝功能，返回实际拷贝的字符数
  */
-size_t mlog_strcpy(size_t cur_len, char *dst, const char *src)
+size_t mlog_strcpy(size_t cur_len, char* dst, const char* src)
 {
-    const char *src_old = src;
+    const char* src_old = src;
 
     assert(dst);
     assert(src);
@@ -40,7 +41,7 @@ size_t mlog_strcpy(size_t cur_len, char *dst, const char *src)
 /**
  * 实现按行拷贝字符串功能，返回实际拷贝的字符数
  */
-size_t mlog_cpyln(char *line, const char *log, size_t len)
+size_t mlog_cpyln(char* line, const char* log, size_t len)
 {
     size_t newline_len = strlen(MLOG_NEWLINE_SIGN), copy_size = 0;
 
@@ -62,9 +63,9 @@ size_t mlog_cpyln(char *line, const char *log, size_t len)
 /**
  * 实现内存拷贝功能，返回目标地址
  */
-void *mlog_memcpy(void *dst, const void *src, size_t count)
+void* mlog_memcpy(void* dst, const void* src, size_t count)
 {
-    char *tmp = (char *) dst, *s = (char *) src;
+    char *tmp = (char*) dst, *s = (char*) src;
 
     assert(dst);
     assert(src);
@@ -80,9 +81,9 @@ void *mlog_memcpy(void *dst, const void *src, size_t count)
 /**
  * 实现内存设置功能，返回目标地址
  */
-void *mlog_memset(void *dst, int val, size_t count)
+void* mlog_memset(void* dst, int val, size_t count)
 {
-    char *tmp = (char *) dst;
+    char* tmp = (char*) dst;
 
     assert(dst);
 

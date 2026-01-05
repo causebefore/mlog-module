@@ -12,10 +12,11 @@
 #ifndef __INC_MLOG_H
 #define __INC_MLOG_H
 
-#include <mlog_cfg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include <mlog_cfg.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -42,95 +43,95 @@ extern "C"
 
 /* MLogger assert for developer. */
 #ifdef MLOG_ASSERT_ENABLE
-#define MLOG_ASSERT(EXPR)                                                                       \
-    if (!(EXPR))                                                                                \
-    {                                                                                           \
-        if (mlog_assert_hook == NULL)                                                           \
-        {                                                                                       \
-            mlog_a("mlog", "(%s) has assert failed at %s:%ld.", #EXPR, __FUNCTION__, __LINE__); \
-            while (1)                                                                           \
-                ;                                                                               \
-        }                                                                                       \
-        else                                                                                    \
-        {                                                                                       \
-            mlog_assert_hook(#EXPR, __FUNCTION__, __LINE__);                                    \
-        }                                                                                       \
-    }
+    #define MLOG_ASSERT(EXPR)                                                                                          \
+        if (!(EXPR))                                                                                                   \
+        {                                                                                                              \
+            if (mlog_assert_hook == NULL)                                                                              \
+            {                                                                                                          \
+                mlog_a("mlog", "(%s) has assert failed at %s:%ld.", #EXPR, __FUNCTION__, __LINE__);                    \
+                while (1)                                                                                              \
+                    ;                                                                                                  \
+            }                                                                                                          \
+            else                                                                                                       \
+            {                                                                                                          \
+                mlog_assert_hook(#EXPR, __FUNCTION__, __LINE__);                                                       \
+            }                                                                                                          \
+        }
 #else
-#define MLOG_ASSERT(EXPR) ((void) 0);
+    #define MLOG_ASSERT(EXPR) ((void) 0);
 #endif
 
 #ifndef MLOG_OUTPUT_ENABLE
-#define mlog_raw(...)
-#define mlog_assert(tag, ...)
-#define mlog_error(tag, ...)
-#define mlog_warn(tag, ...)
-#define mlog_info(tag, ...)
-#define mlog_debug(tag, ...)
-#define mlog_verbose(tag, ...)
+    #define mlog_raw(...)
+    #define mlog_assert(tag, ...)
+    #define mlog_error(tag, ...)
+    #define mlog_warn(tag, ...)
+    #define mlog_info(tag, ...)
+    #define mlog_debug(tag, ...)
+    #define mlog_verbose(tag, ...)
 #else /* MLOG_OUTPUT_ENABLE */
 
-#ifdef MLOG_FMT_USING_FUNC
-#define MLOG_OUTPUT_FUNC __FUNCTION__
-#else
-#define MLOG_OUTPUT_FUNC NULL
-#endif
+    #ifdef MLOG_FMT_USING_FUNC
+        #define MLOG_OUTPUT_FUNC __FUNCTION__
+    #else
+        #define MLOG_OUTPUT_FUNC NULL
+    #endif
 
-#ifdef MLOG_FMT_USING_DIR
-#define MLOG_OUTPUT_DIR __FILE__
-#else
-#define MLOG_OUTPUT_DIR NULL
-#endif
+    #ifdef MLOG_FMT_USING_DIR
+        #define MLOG_OUTPUT_DIR __FILE__
+    #else
+        #define MLOG_OUTPUT_DIR NULL
+    #endif
 
-#ifdef MLOG_FMT_USING_LINE
-#define MLOG_OUTPUT_LINE __LINE__
-#else
-#define MLOG_OUTPUT_LINE 0
-#endif
+    #ifdef MLOG_FMT_USING_LINE
+        #define MLOG_OUTPUT_LINE __LINE__
+    #else
+        #define MLOG_OUTPUT_LINE 0
+    #endif
 
-#define mlog_raw(...) mlog_raw_output(__VA_ARGS__)
-#if MLOG_OUTPUT_LVL >= MLOG_LVL_ASSERT
-#define mlog_assert(tag, ...) \
-    mlog_output(MLOG_LVL_ASSERT, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
-#else
-#define mlog_assert(tag, ...)
-#endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_ASSERT */
+    #define mlog_raw(...) mlog_raw_output(__VA_ARGS__)
+    #if MLOG_OUTPUT_LVL >= MLOG_LVL_ASSERT
+        #define mlog_assert(tag, ...)                                                                                  \
+            mlog_output(MLOG_LVL_ASSERT, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
+    #else
+        #define mlog_assert(tag, ...)
+    #endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_ASSERT */
 
-#if MLOG_OUTPUT_LVL >= MLOG_LVL_ERROR
-#define mlog_error(tag, ...) \
-    mlog_output(MLOG_LVL_ERROR, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
-#else
-#define mlog_error(tag, ...)
-#endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_ERROR */
+    #if MLOG_OUTPUT_LVL >= MLOG_LVL_ERROR
+        #define mlog_error(tag, ...)                                                                                   \
+            mlog_output(MLOG_LVL_ERROR, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
+    #else
+        #define mlog_error(tag, ...)
+    #endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_ERROR */
 
-#if MLOG_OUTPUT_LVL >= MLOG_LVL_WARN
-#define mlog_warn(tag, ...) \
-    mlog_output(MLOG_LVL_WARN, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
-#else
-#define mlog_warn(tag, ...)
-#endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_WARN */
+    #if MLOG_OUTPUT_LVL >= MLOG_LVL_WARN
+        #define mlog_warn(tag, ...)                                                                                    \
+            mlog_output(MLOG_LVL_WARN, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
+    #else
+        #define mlog_warn(tag, ...)
+    #endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_WARN */
 
-#if MLOG_OUTPUT_LVL >= MLOG_LVL_INFO
-#define mlog_info(tag, ...) \
-    mlog_output(MLOG_LVL_INFO, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
-#else
-#define mlog_info(tag, ...)
-#endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_INFO */
+    #if MLOG_OUTPUT_LVL >= MLOG_LVL_INFO
+        #define mlog_info(tag, ...)                                                                                    \
+            mlog_output(MLOG_LVL_INFO, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
+    #else
+        #define mlog_info(tag, ...)
+    #endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_INFO */
 
-#if MLOG_OUTPUT_LVL >= MLOG_LVL_DEBUG
-#define mlog_debug(tag, ...) \
-    mlog_output(MLOG_LVL_DEBUG, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
-#else
-#define mlog_debug(tag, ...)
-#endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_DEBUG */
+    #if MLOG_OUTPUT_LVL >= MLOG_LVL_DEBUG
+        #define mlog_debug(tag, ...)                                                                                   \
+            mlog_output(MLOG_LVL_DEBUG, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
+    #else
+        #define mlog_debug(tag, ...)
+    #endif /* MLOG_OUTPUT_LVL >= MLOG_LVL_DEBUG */
 
-#if MLOG_OUTPUT_LVL == MLOG_LVL_VERBOSE
-#define mlog_verbose(tag, ...) \
-    mlog_output(MLOG_LVL_VERBOSE, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
-#else
-#define mlog_verbose(tag, ...)
-#endif /* MLOG_OUTPUT_LVL == MLOG_LVL_VERBOSE */
-#endif /* MLOG_OUTPUT_ENABLE */
+    #if MLOG_OUTPUT_LVL == MLOG_LVL_VERBOSE
+        #define mlog_verbose(tag, ...)                                                                                 \
+            mlog_output(MLOG_LVL_VERBOSE, tag, MLOG_OUTPUT_DIR, MLOG_OUTPUT_FUNC, MLOG_OUTPUT_LINE, __VA_ARGS__)
+    #else
+        #define mlog_verbose(tag, ...)
+    #endif /* MLOG_OUTPUT_LVL == MLOG_LVL_VERBOSE */
+#endif     /* MLOG_OUTPUT_ENABLE */
 
     /* all formats index */
     typedef enum
@@ -146,8 +147,8 @@ extern "C"
     } MlogFmtIndex;
 
 /* macro definition for all formats */
-#define MLOG_FMT_ALL                                                                                                  \
-    (MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME | MLOG_FMT_P_INFO | MLOG_FMT_T_INFO | MLOG_FMT_DIR | MLOG_FMT_FUNC | \
+#define MLOG_FMT_ALL                                                                                                   \
+    (MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME | MLOG_FMT_P_INFO | MLOG_FMT_T_INFO | MLOG_FMT_DIR | MLOG_FMT_FUNC |  \
      MLOG_FMT_LINE)
 
     /* output log's tag filter */
@@ -200,26 +201,21 @@ extern "C"
     void        mlog_set_text_color_enabled(bool enabled);
     bool        mlog_get_text_color_enabled(void);
     void        mlog_set_fmt(uint8_t level, size_t set);
-    void        mlog_set_filter(uint8_t level, const char *tag, const char *keyword);
+    void        mlog_set_filter(uint8_t level, const char* tag, const char* keyword);
     void        mlog_set_filter_lvl(uint8_t level);
-    void        mlog_set_filter_tag(const char *tag);
-    void        mlog_set_filter_kw(const char *keyword);
-    void        mlog_set_filter_tag_lvl(const char *tag, uint8_t level);
-    uint8_t     mlog_get_filter_tag_lvl(const char *tag);
-    void        mlog_raw_output(const char *format, ...);
-    void        mlog_output(uint8_t     level,
-                            const char *tag,
-                            const char *file,
-                            const char *func,
-                            const long  line,
-                            const char *format,
-                            ...);
+    void        mlog_set_filter_tag(const char* tag);
+    void        mlog_set_filter_kw(const char* keyword);
+    void        mlog_set_filter_tag_lvl(const char* tag, uint8_t level);
+    uint8_t     mlog_get_filter_tag_lvl(const char* tag);
+    void        mlog_raw_output(const char* format, ...);
+    void        mlog_output(uint8_t level, const char* tag, const char* file, const char* func, const long line,
+                            const char* format, ...);
     void        mlog_output_lock_enabled(bool enabled);
-    extern void (*mlog_assert_hook)(const char *expr, const char *func, size_t line);
-    void        mlog_assert_set_hook(void (*hook)(const char *expr, const char *func, size_t line));
-    int8_t      mlog_find_lvl(const char *log);
-    const char *mlog_find_tag(const char *log, uint8_t lvl, size_t *tag_len);
-    void        mlog_hexdump(const char *name, uint8_t width, const void *buf, uint16_t size);
+    extern void (*mlog_assert_hook)(const char* expr, const char* func, size_t line);
+    void        mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_t line));
+    int8_t      mlog_find_lvl(const char* log);
+    const char* mlog_find_tag(const char* log, uint8_t lvl, size_t* tag_len);
+    void        mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t size);
 
 #define mlog_a(tag, ...) mlog_assert(tag, __VA_ARGS__)
 #define mlog_e(tag, ...) mlog_error(tag, __VA_ARGS__)
@@ -233,45 +229,45 @@ extern "C"
  * NOTE: The `LOG_TAG` and `LOG_LVL` must defined before including the <mlog.h> when you want to use log_x API.
  */
 #if !defined(LOG_TAG)
-#define LOG_TAG "NO_TAG"
+    #define LOG_TAG "NO_TAG"
 #endif
 #if !defined(LOG_LVL)
-#define LOG_LVL MLOG_LVL_VERBOSE
+    #define LOG_LVL MLOG_LVL_VERBOSE
 #endif
 #if LOG_LVL >= MLOG_LVL_ASSERT
-#define log_a(...) mlog_a(LOG_TAG, __VA_ARGS__)
+    #define log_a(...) mlog_a(LOG_TAG, __VA_ARGS__)
 #else
-#define log_a(...) ((void) 0);
+    #define log_a(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_ERROR
-#define log_e(...) mlog_e(LOG_TAG, __VA_ARGS__)
+    #define log_e(...) mlog_e(LOG_TAG, __VA_ARGS__)
 #else
-#define log_e(...) ((void) 0);
+    #define log_e(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_WARN
-#define log_w(...) mlog_w(LOG_TAG, __VA_ARGS__)
+    #define log_w(...) mlog_w(LOG_TAG, __VA_ARGS__)
 #else
-#define log_w(...) ((void) 0);
+    #define log_w(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_INFO
-#define log_i(...) mlog_i(LOG_TAG, __VA_ARGS__)
+    #define log_i(...) mlog_i(LOG_TAG, __VA_ARGS__)
 #else
-#define log_i(...) ((void) 0);
+    #define log_i(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_DEBUG
-#define log_d(...) mlog_d(LOG_TAG, __VA_ARGS__)
+    #define log_d(...) mlog_d(LOG_TAG, __VA_ARGS__)
 #else
-#define log_d(...) ((void) 0);
+    #define log_d(...) ((void) 0);
 #endif
 #if LOG_LVL >= MLOG_LVL_VERBOSE
-#define log_v(...) mlog_v(LOG_TAG, __VA_ARGS__)
+    #define log_v(...) mlog_v(LOG_TAG, __VA_ARGS__)
 #else
-#define log_v(...) ((void) 0);
+    #define log_v(...) ((void) 0);
 #endif
 
 /* assert API short definition */
 #if !defined(assert)
-#define assert MLOG_ASSERT
+    #define assert MLOG_ASSERT
 #endif
 
     /* mlog_buf.c */
@@ -280,14 +276,14 @@ extern "C"
 
     /* mlog_async.c */
     void   mlog_async_enabled(bool enabled);
-    size_t mlog_async_get_log(char *log, size_t size);
-    size_t mlog_async_get_line_log(char *log, size_t size);
+    size_t mlog_async_get_log(char* log, size_t size);
+    size_t mlog_async_get_line_log(char* log, size_t size);
 
     /* mlog_utils.c */
-    size_t mlog_strcpy(size_t cur_len, char *dst, const char *src);
-    size_t mlog_cpyln(char *line, const char *log, size_t len);
-    void  *mlog_memcpy(void *dst, const void *src, size_t count);
-    void  *mlog_memset(void *dst, int val, size_t count);
+    size_t mlog_strcpy(size_t cur_len, char* dst, const char* src);
+    size_t mlog_cpyln(char* line, const char* log, size_t len);
+    void*  mlog_memcpy(void* dst, const void* src, size_t count);
+    void*  mlog_memset(void* dst, int val, size_t count);
 #ifdef __cplusplus
 }
 #endif

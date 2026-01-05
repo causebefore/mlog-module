@@ -10,13 +10,14 @@
  * Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
  */
 
-#include <mlog.h>
 #include <string.h>
 
+#include <mlog.h>
+
 #ifdef MLOG_BUF_OUTPUT_ENABLE
-#if !defined(MLOG_BUF_OUTPUT_BUF_SIZE)
-#error "Please configure buffer size for buffered output mode (in mlog_cfg.h)"
-#endif
+    #if !defined(MLOG_BUF_OUTPUT_BUF_SIZE)
+        #error "Please configure buffer size for buffered output mode (in mlog_cfg.h)"
+    #endif
 
 /* buffered output mode's buffer */
 static char log_buf[MLOG_BUF_OUTPUT_BUF_SIZE] = {0};
@@ -25,7 +26,7 @@ static size_t buf_write_size = 0;
 /* buffered output mode enabled flag */
 static bool is_enabled = false;
 
-extern void mlog_port_output(const char *log, size_t size);
+extern void mlog_port_output(const char* log, size_t size);
 extern void mlog_output_lock(void);
 extern void mlog_output_unlock(void);
 
@@ -35,7 +36,7 @@ extern void mlog_output_unlock(void);
  * @param log will be buffered line's log
  * @param size log size
  */
-void mlog_buf_output(const char *log, size_t size)
+void mlog_buf_output(const char* log, size_t size)
 {
     size_t write_size = 0, write_index = 0;
 

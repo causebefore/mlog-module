@@ -32,19 +32,19 @@
 #define MLOG_COLOR_ENABLE
 /* 日志颜色配置 */
 #if defined(USE_RTT_COLOR)
-#define MLOG_COLOR_ASSERT  RTT_CTRL_TEXT_BRIGHT_MAGENTA /* 断言: 亮紫色 */
-#define MLOG_COLOR_ERROR   RTT_CTRL_TEXT_BRIGHT_RED     /* 错误: 亮红色 */
-#define MLOG_COLOR_WARN    RTT_CTRL_TEXT_BRIGHT_YELLOW  /* 警告: 亮黄色 */
-#define MLOG_COLOR_INFO    RTT_CTRL_TEXT_BRIGHT_GREEN   /* 信息: 亮绿色 */
-#define MLOG_COLOR_DEBUG   RTT_CTRL_TEXT_BRIGHT_CYAN    /* 调试: 亮青色 */
-#define MLOG_COLOR_VERBOSE RTT_CTRL_TEXT_BRIGHT_WHITE   /* 详细: 亮白色 */
+    #define MLOG_COLOR_ASSERT  RTT_CTRL_TEXT_BRIGHT_MAGENTA /* 断言: 亮紫色 */
+    #define MLOG_COLOR_ERROR   RTT_CTRL_TEXT_BRIGHT_RED     /* 错误: 亮红色 */
+    #define MLOG_COLOR_WARN    RTT_CTRL_TEXT_BRIGHT_YELLOW  /* 警告: 亮黄色 */
+    #define MLOG_COLOR_INFO    RTT_CTRL_TEXT_BRIGHT_GREEN   /* 信息: 亮绿色 */
+    #define MLOG_COLOR_DEBUG   RTT_CTRL_TEXT_BRIGHT_CYAN    /* 调试: 亮青色 */
+    #define MLOG_COLOR_VERBOSE RTT_CTRL_TEXT_BRIGHT_WHITE   /* 详细: 亮白色 */
 #else
-#define MLOG_COLOR_ASSERT  (F_MAGENTA B_NULL S_NORMAL)
-#define MLOG_COLOR_ERROR   (F_RED B_NULL S_NORMAL)
-#define MLOG_COLOR_WARN    (F_YELLOW B_NULL S_NORMAL)
-#define MLOG_COLOR_INFO    (F_CYAN B_NULL S_NORMAL)
-#define MLOG_COLOR_DEBUG   (F_GREEN B_NULL S_NORMAL)
-#define MLOG_COLOR_VERBOSE (F_BLUE B_NULL S_NORMAL)
+    #define MLOG_COLOR_ASSERT  (F_MAGENTA B_NULL S_NORMAL)
+    #define MLOG_COLOR_ERROR   (F_RED B_NULL S_NORMAL)
+    #define MLOG_COLOR_WARN    (F_YELLOW B_NULL S_NORMAL)
+    #define MLOG_COLOR_INFO    (F_CYAN B_NULL S_NORMAL)
+    #define MLOG_COLOR_DEBUG   (F_GREEN B_NULL S_NORMAL)
+    #define MLOG_COLOR_VERBOSE (F_BLUE B_NULL S_NORMAL)
 #endif
 
 /*---------------------------------------------------------------------------*/

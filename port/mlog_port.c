@@ -14,6 +14,7 @@
 #include "bsp_usart.h"
 #include "common.h"
 #include "stm32f10x.h"
+
 #include <mlog.h>
 /**
  * MLogger port initialize
@@ -44,7 +45,7 @@ void mlog_port_deinit(void)
  * @param log output of log
  * @param size log size
  */
-void mlog_port_output(const char *log, size_t size)
+void mlog_port_output(const char* log, size_t size)
 {
     /* add your code here */
 
@@ -73,7 +74,7 @@ void mlog_port_output_unlock(void)
  *
  * @return current time
  */
-const char *mlog_port_get_time(void)
+const char* mlog_port_get_time(void)
 {
     // char time_buf[20];
     // uint64_t tick = get_timer_tick();
@@ -90,7 +91,7 @@ const char *mlog_port_get_time(void)
  *
  * @return current process name
  */
-const char *mlog_port_get_p_info(void)
+const char* mlog_port_get_p_info(void)
 {
     return "";
     /* add your code here */
@@ -101,7 +102,7 @@ const char *mlog_port_get_p_info(void)
  *
  * @return current thread name
  */
-const char *mlog_port_get_t_info(void)
+const char* mlog_port_get_t_info(void)
 {
     return "";
     /* add your code here */
