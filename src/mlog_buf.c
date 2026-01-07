@@ -85,7 +85,7 @@ void mlog_flush(void)
     buf_write_size = 0;
     /* unlock output */
     mlog_output_unlock();
-    mlog_memset(log_buf, 0, sizeof(log_buf));
+    memset(log_buf, 0, sizeof(log_buf));
 }
 
 /**

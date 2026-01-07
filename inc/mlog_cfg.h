@@ -12,14 +12,14 @@
 #ifndef __INC_MLOG_CFG_H
 #define __INC_MLOG_CFG_H
 
-#include "SEGGER_RTT.h"
+
 /*---------------------------------------------------------------------------*/
 
 #define MLOG_OUTPUT_ENABLE /* 使能输出日志 */
 #define MLOG_ASSERT_ENABLE /* 使能断言检查 */
 
 #define MLOG_OUTPUT_LVL             MLOG_LVL_VERBOSE /* 设置静态输出日志级别。范围：从 MLOG_LVL_ASSERT 到 MLOG_LVL_VERBOSE */
-#define MLOG_LINE_BUF_SIZE          1024             /* 每行日志的缓冲区大小 */
+#define MLOG_LINE_BUF_SIZE          256              /* 每行日志的缓冲区大小 */
 #define MLOG_LINE_NUM_MAX_LEN       5                /* 每行日志的行号最大长度 */
 #define MLOG_FILTER_TAG_MAX_LEN     15               /* 输出过滤器的标签最大长度 */
 #define MLOG_FILTER_KW_MAX_LEN      16               /* 输出过滤器的关键字最大长度 */
@@ -27,7 +27,7 @@
 #define MLOG_NEWLINE_SIGN           "\n"             /* 输出换行符 */
 
 /*---------------------------------------------------------------------------*/
-#define USE_RTT_COLOR
+// #define USE_RTT_COLOR
 /* 使能日志颜色 */
 #define MLOG_COLOR_ENABLE
 /* 日志颜色配置 */
@@ -55,10 +55,10 @@
 #define MLOG_FMT_USING_LINE
 
 /*---------------------------------------------------------------------------*/
+/* 内部使用的字符串和内存操作函数 */
+#define MLOG_STRCPY mlog_strcpy
+#define MLOG_MEMCPY memcpy
+#define MLOG_MEMSET memset
 
-// /* 使能缓冲区输出模式 */
-// #define MLOG_BUF_OUTPUT_ENABLE
-// /* 缓冲区输出模式的缓冲区大小 */
-// #define MLOG_BUF_OUTPUT_BUF_SIZE (MLOG_LINE_BUF_SIZE * 10)
 
 #endif /* __INC_MLOG_CFG_H */
