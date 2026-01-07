@@ -400,6 +400,16 @@ void mlog_set_filter_lvl(uint8_t level)
 }
 
 /**
+ * get current log filter's level
+ *
+ * @return current filter level
+ */
+uint8_t mlog_get_filter_lvl(void)
+{
+    return mlog.filter.level;
+}
+
+/**
  * set log filter's tag
  *
  * @param tag tag (NULL or empty string to clear filter)
@@ -431,6 +441,27 @@ const char* mlog_get_level_name(uint8_t level)
         return level_names[level];
     }
     return "UNKNOWN";
+}
+
+/**
+ * check if a log level is enabled for output
+ *
+ * @param level log level to check
+ * @return true if the level would be output, false otherwise
+ */
+bool mlog_is_level_enabled(uint8_t level)
+{
+    if (!mlog.init_ok || !mlog.output_enabled)
+    {
+        return false;
+    }
+
+    if (level > mlog.filter.level)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 /**

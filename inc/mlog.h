@@ -224,10 +224,12 @@ extern "C"
     void    mlog_set_fmt(uint8_t level, size_t set);
     void    mlog_set_filter(uint8_t level, const char* tag);
     void    mlog_set_filter_lvl(uint8_t level);
+    uint8_t mlog_get_filter_lvl(void);
     void    mlog_set_filter_tag(const char* tag);
     void    mlog_set_filter_tag_lvl(const char* tag, uint8_t level);
     uint8_t mlog_get_filter_tag_lvl(const char* tag);
     const char* mlog_get_level_name(uint8_t level);
+    bool    mlog_is_level_enabled(uint8_t level);
     void    mlog_raw_output(const char* format, ...);
     void    mlog_output(uint8_t level, const char* tag, const char* file, const char* func, const long line,
                         const char* format, ...);
