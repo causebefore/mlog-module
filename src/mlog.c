@@ -400,6 +400,16 @@ void mlog_set_filter_lvl(uint8_t level)
 }
 
 /**
+ * get current log filter's level
+ *
+ * @return current filter level
+ */
+uint8_t mlog_get_filter_lvl(void)
+{
+    return mlog.filter.level;
+}
+
+/**
  * set log filter's tag
  *
  * @param tag tag (NULL or empty string to clear filter)
@@ -407,6 +417,51 @@ void mlog_set_filter_lvl(uint8_t level)
 void mlog_set_filter_tag(const char* tag)
 {
     set_filter_string(mlog.filter.tag, tag, MLOG_FILTER_TAG_MAX_LEN);
+}
+
+/**
+ * get log level name as string
+ *
+ * @param level log level
+ * @return level name string ("ASSERT", "ERROR", "WARN", "INFO", "DEBUG", "VERBOSE", or "UNKNOWN")
+ */
+const char* mlog_get_level_name(uint8_t level)
+{
+    static const char* level_names[] = {
+        [MLOG_LVL_ASSERT]  = "ASSERT",
+        [MLOG_LVL_ERROR]   = "ERROR",
+        [MLOG_LVL_WARN]    = "WARN",
+        [MLOG_LVL_INFO]    = "INFO",
+        [MLOG_LVL_DEBUG]   = "DEBUG",
+        [MLOG_LVL_VERBOSE] = "VERBOSE",
+    };
+
+    if (level < MLOG_LVL_TOTAL_NUM)
+    {
+        return level_names[level];
+    }
+    return "UNKNOWN";
+}
+
+/**
+ * check if a log level is enabled for output
+ *
+ * @param level log level to check
+ * @return true if the level would be output, false otherwise
+ */
+bool mlog_is_level_enabled(uint8_t level)
+{
+    if (!mlog.init_ok || !mlog.output_enabled)
+    {
+        return false;
+    }
+
+    if (level > mlog.filter.level)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 /**
