@@ -410,6 +410,30 @@ void mlog_set_filter_tag(const char* tag)
 }
 
 /**
+ * get log level name as string
+ *
+ * @param level log level
+ * @return level name string ("ASSERT", "ERROR", "WARN", "INFO", "DEBUG", "VERBOSE", or "UNKNOWN")
+ */
+const char* mlog_get_level_name(uint8_t level)
+{
+    static const char* level_names[] = {
+        [MLOG_LVL_ASSERT]  = "ASSERT",
+        [MLOG_LVL_ERROR]   = "ERROR",
+        [MLOG_LVL_WARN]    = "WARN",
+        [MLOG_LVL_INFO]    = "INFO",
+        [MLOG_LVL_DEBUG]   = "DEBUG",
+        [MLOG_LVL_VERBOSE] = "VERBOSE",
+    };
+
+    if (level < MLOG_LVL_TOTAL_NUM)
+    {
+        return level_names[level];
+    }
+    return "UNKNOWN";
+}
+
+/**
  * lock output
  */
 void mlog_output_lock(void)
