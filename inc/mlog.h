@@ -240,9 +240,9 @@ extern "C"
     const MlogPortInterface* mlog_port_get_default(void);
 
     extern void (*mlog_assert_hook)(const char* expr, const char* func, size_t line);
-    void mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_t line));
-    void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t size);
-
+    void               mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_t line));
+    void               mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t size);
+    MlogPortInterface* mlog_get_port_interface(void);
 #define mlog_a(tag, ...) mlog_assert(tag, __VA_ARGS__)
 #define mlog_e(tag, ...) mlog_error(tag, __VA_ARGS__)
 #define mlog_w(tag, ...) mlog_warn(tag, __VA_ARGS__)
@@ -303,8 +303,14 @@ extern "C"
 #endif
 
     /* mlog_buf.c */
-    void mlog_buf_enabled(bool enabled);
-    void mlog_flush(void);
+    void   mlog_buf_enabled(bool enabled);
+    void   mlog_flush(void);
+    size_t mlog_flush_partial(size_t max_bytes);
+    void   mlog_buf_get_overflow_stats(uint32_t* count, uint32_t* bytes);
+    void   mlog_buf_reset_overflow_stats(void);
+    size_t mlog_buf_get_used(void);
+    size_t mlog_buf_get_free(void);
+
 #ifdef __cplusplus
 }
 #endif

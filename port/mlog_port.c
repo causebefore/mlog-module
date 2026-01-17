@@ -9,8 +9,9 @@
  * Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
  */
 
-#include "usart.h"
 #include "shell.h"
+#include "usart.h"
+
 #include <mlog.h>
 
 /*===========================================================================*/
@@ -33,17 +34,21 @@ static void default_port_deinit(void)
 
 static void default_port_output(const char* log, size_t size)
 {
-    shell_log(log,size);
+    shell_log(log, (int) size);
 }
+
+/* 用于保护log_buf的中断状态 */
+static uint32_t s_mlog_primask = 0;
 
 static void default_port_output_lock(void)
 {
-    /* add your code here */
+    s_mlog_primask = __get_PRIMASK();
+    __disable_irq();
 }
 
 static void default_port_output_unlock(void)
 {
-    /* add your code here */
+    __set_PRIMASK(s_mlog_primask);
 }
 
 static const char* default_port_get_time(void)

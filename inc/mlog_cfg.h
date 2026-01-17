@@ -18,6 +18,7 @@
 #define MLOG_OUTPUT_ENABLE /* 使能输出日志 */
 #define MLOG_ASSERT_ENABLE /* 使能断言检查 */
 
+
 #define MLOG_OUTPUT_LVL             MLOG_LVL_VERBOSE /* 设置静态输出日志级别。范围：从 MLOG_LVL_ASSERT 到 MLOG_LVL_VERBOSE */
 #define MLOG_LINE_BUF_SIZE          256              /* 每行日志的缓冲区大小 */
 #define MLOG_LINE_NUM_MAX_LEN       5                /* 每行日志的行号最大长度 */

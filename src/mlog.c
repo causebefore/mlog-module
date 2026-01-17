@@ -20,6 +20,11 @@
 /* Static port interface instance - initialized with NULL callbacks */
 static MlogPortInterface s_port = {0};
 
+MlogPortInterface* mlog_get_port_interface(void)
+{
+    return &s_port;
+}
+
 /**
  * Register port interface callbacks
  * Call this before mlog_init() to set up hardware-specific implementations
@@ -793,6 +798,8 @@ void mlog_output(uint8_t level, const char* tag, const char* file, const char* f
         s_port.output(log_buf, log_len);
     }
 #endif
+    /* clear log buffer */
+    memset(log_buf, 0, sizeof(log_buf));
     /* unlock output */
     mlog_output_unlock();
 
