@@ -1,0 +1,22 @@
+# IDE / 编辑器
+.vscode/
+.idea/
+.qoder/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 编译产物
+build/
+cmake-build-*/
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
