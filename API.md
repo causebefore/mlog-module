@@ -46,6 +46,7 @@ typedef enum
 ```
 
 **级别说明：**
+
 - `MLOG_LVL_ASSERT`：最高优先级，用于断言失败
 - `MLOG_LVL_ERROR`：严重错误，需要立即处理
 - `MLOG_LVL_WARN`：警告信息
@@ -106,16 +107,19 @@ MlogErrCode mlog_init(void);
 **参数：** 无
 
 **返回值：**
+
 - `MLOG_NO_ERR`：初始化成功
 - `MLOG_ERR_PORT_INIT_FAIL`：移植层初始化失败
 
 **说明：**
+
 - 必须在使用任何其他 MLog 功能之前调用
 - 会调用移植层的初始化函数
 - 设置默认的日志级别为 `MLOG_LVL_VERBOSE`
 - 如果已经初始化，再次调用不会有任何效果
 
 **示例：**
+
 ```c
 MlogErrCode result = mlog_init();
 if (result != MLOG_NO_ERR) {
@@ -136,10 +140,12 @@ void mlog_deinit(void);
 **返回值：** 无
 
 **说明：**
+
 - 调用移植层的反初始化函数
 - 如果未初始化，调用不会有任何效果
 
 **示例：**
+
 ```c
 mlog_deinit();
 ```
@@ -157,11 +163,13 @@ void mlog_start(void);
 **返回值：** 无
 
 **说明：**
+
 - 必须在 `mlog_init()` 之后调用
 - 启用日志输出功能
 - 如果配置了缓冲输出，也会启用缓冲
 
 **示例：**
+
 ```c
 mlog_init();
 mlog_start();
@@ -180,10 +188,12 @@ void mlog_stop(void);
 **返回值：** 无
 
 **说明：**
+
 - 禁用日志输出
 - 如果配置了缓冲输出，也会禁用缓冲
 
 **示例：**
+
 ```c
 mlog_stop();
 ```
@@ -201,16 +211,19 @@ void mlog_raw_output(const char* format, ...);
 **功能：** 输出原始格式的日志，不添加任何格式信息。
 
 **参数：**
+
 - `format`：格式化字符串（类似 printf）
 - `...`：可变参数
 
 **返回值：** 无
 
 **说明：**
+
 - 直接输出，不添加级别、标签、时间等信息
 - 不受日志级别和过滤器影响
 
 **示例：**
+
 ```c
 mlog_raw_output("Raw log: %d\n", value);
 ```
@@ -218,13 +231,14 @@ mlog_raw_output("Raw log: %d\n", value);
 ### mlog_output
 
 ```c
-void mlog_output(uint8_t level, const char* tag, const char* file, 
+void mlog_output(uint8_t level, const char* tag, const char* file,
                  const char* func, const long line, const char* format, ...);
 ```
 
 **功能：** 输出格式化的日志。
 
 **参数：**
+
 - `level`：日志级别
 - `tag`：日志标签
 - `file`：文件名（可为 NULL）
@@ -236,6 +250,7 @@ void mlog_output(uint8_t level, const char* tag, const char* file,
 **返回值：** 无
 
 **说明：**
+
 - 根据配置的格式选项输出日志
 - 受日志级别和过滤器控制
 - 通常不直接调用，而是通过宏使用
@@ -250,11 +265,13 @@ mlog_a(tag, format, ...);
 **功能：** 输出断言级别日志。
 
 **参数：**
+
 - `tag`：日志标签
 - `format`：格式化字符串
 - `...`：可变参数
 
 **示例：**
+
 ```c
 mlog_a("system", "Critical error: %s", error_msg);
 ```
@@ -269,11 +286,13 @@ mlog_e(tag, format, ...);
 **功能：** 输出错误级别日志。
 
 **参数：**
+
 - `tag`：日志标签
 - `format`：格式化字符串
 - `...`：可变参数
 
 **示例：**
+
 ```c
 mlog_e("network", "Connection failed: %d", error_code);
 ```
@@ -288,11 +307,13 @@ mlog_w(tag, format, ...);
 **功能：** 输出警告级别日志。
 
 **参数：**
+
 - `tag`：日志标签
 - `format`：格式化字符串
 - `...`：可变参数
 
 **示例：**
+
 ```c
 mlog_w("sensor", "Temperature high: %d°C", temp);
 ```
@@ -307,11 +328,13 @@ mlog_i(tag, format, ...);
 **功能：** 输出信息级别日志。
 
 **参数：**
+
 - `tag`：日志标签
 - `format`：格式化字符串
 - `...`：可变参数
 
 **示例：**
+
 ```c
 mlog_i("main", "System started successfully");
 ```
@@ -326,11 +349,13 @@ mlog_d(tag, format, ...);
 **功能：** 输出调试级别日志。
 
 **参数：**
+
 - `tag`：日志标签
 - `format`：格式化字符串
 - `...`：可变参数
 
 **示例：**
+
 ```c
 mlog_d("parser", "Parsing data: %s", data);
 ```
@@ -345,11 +370,13 @@ mlog_v(tag, format, ...);
 **功能：** 输出详细级别日志。
 
 **参数：**
+
 - `tag`：日志标签
 - `format`：格式化字符串
 - `...`：可变参数
 
 **示例：**
+
 ```c
 mlog_v("trace", "Function call: %s", __func__);
 ```
@@ -367,16 +394,19 @@ void mlog_set_fmt(uint8_t level, size_t set);
 **功能：** 设置指定日志级别的输出格式。
 
 **参数：**
+
 - `level`：日志级别（`MLOG_LVL_ASSERT` 到 `MLOG_LVL_VERBOSE`）
 - `set`：格式选项的位或组合
 
 **返回值：** 无
 
 **说明：**
+
 - 可以为不同的日志级别设置不同的格式
 - 使用 `MLOG_FMT_ALL` 启用所有格式选项
 
 **示例：**
+
 ```c
 // 为 INFO 级别设置格式：级别 + 标签 + 时间
 mlog_set_fmt(MLOG_LVL_INFO, MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME);
@@ -385,7 +415,7 @@ mlog_set_fmt(MLOG_LVL_INFO, MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME);
 mlog_set_fmt(MLOG_LVL_DEBUG, MLOG_FMT_ALL);
 
 // 为 ERROR 级别设置：级别 + 标签 + 文件 + 行号
-mlog_set_fmt(MLOG_LVL_ERROR, 
+mlog_set_fmt(MLOG_LVL_ERROR,
              MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_DIR | MLOG_FMT_LINE);
 ```
 
@@ -398,15 +428,18 @@ void mlog_set_text_color_enabled(bool enabled);
 **功能：** 启用或禁用彩色输出。
 
 **参数：**
+
 - `enabled`：`true` 启用，`false` 禁用
 
 **返回值：** 无
 
 **说明：**
+
 - 需要在编译时定义 `MLOG_COLOR_ENABLE`
 - 使用 ANSI 转义序列实现颜色输出
 
 **示例：**
+
 ```c
 mlog_set_text_color_enabled(true);  // 启用彩色输出
 mlog_set_text_color_enabled(false); // 禁用彩色输出
@@ -423,10 +456,12 @@ bool mlog_get_text_color_enabled(void);
 **参数：** 无
 
 **返回值：**
+
 - `true`：彩色输出已启用
 - `false`：彩色输出已禁用
 
 **示例：**
+
 ```c
 if (mlog_get_text_color_enabled()) {
     // 彩色输出已启用
@@ -446,15 +481,18 @@ void mlog_set_filter_lvl(uint8_t level);
 **功能：** 设置全局日志级别过滤。
 
 **参数：**
+
 - `level`：日志级别（`MLOG_LVL_ASSERT` 到 `MLOG_LVL_VERBOSE`）
 
 **返回值：** 无
 
 **说明：**
+
 - 只输出级别小于或等于设置级别的日志
 - 例如设置为 `MLOG_LVL_INFO`，则只输出 ASSERT、ERROR、WARN、INFO 级别的日志
 
 **示例：**
+
 ```c
 // 只输出 ERROR 及以上级别的日志
 mlog_set_filter_lvl(MLOG_LVL_ERROR);
@@ -472,15 +510,18 @@ void mlog_set_filter_tag(const char* tag);
 **功能：** 设置标签过滤，只输出指定标签的日志。
 
 **参数：**
+
 - `tag`：标签名称，传入空字符串 `""` 或 `NULL` 清除过滤
 
 **返回值：** 无
 
 **说明：**
+
 - 只输出与指定标签完全匹配的日志
 - 设置后，其他标签的日志都不会输出
 
 **示例：**
+
 ```c
 // 只输出 "network" 标签的日志
 mlog_set_filter_tag("network");
@@ -498,15 +539,18 @@ void mlog_set_filter(uint8_t level, const char* tag);
 **功能：** 同时设置级别和标签过滤。
 
 **参数：**
+
 - `level`：日志级别
 - `tag`：标签名称
 
 **返回值：** 无
 
 **说明：**
+
 - 等同于依次调用 `mlog_set_filter_lvl()` 和 `mlog_set_filter_tag()`
 
 **示例：**
+
 ```c
 // 只输出 "sensor" 标签且级别为 INFO 及以上的日志
 mlog_set_filter(MLOG_LVL_INFO, "sensor");
@@ -521,17 +565,20 @@ void mlog_set_filter_tag_lvl(const char* tag, uint8_t level);
 **功能：** 为指定标签设置独立的日志级别。
 
 **参数：**
+
 - `tag`：标签名称
 - `level`：日志级别，使用 `MLOG_FILTER_LVL_ALL` 移除该标签的级别过滤
 
 **返回值：** 无
 
 **说明：**
+
 - 可以为不同标签设置不同的日志级别
 - 最多支持 `MLOG_FILTER_TAG_LVL_MAX_NUM` 个标签级别过滤
 - 设置 `MLOG_FILTER_LVL_SILENT` 可以静默该标签的所有日志
 
 **示例：**
+
 ```c
 // 为 "network" 标签设置 INFO 级别
 mlog_set_filter_tag_lvl("network", MLOG_LVL_INFO);
@@ -555,12 +602,15 @@ uint8_t mlog_get_filter_tag_lvl(const char* tag);
 **功能：** 获取指定标签的日志级别过滤设置。
 
 **参数：**
+
 - `tag`：标签名称
 
 **返回值：**
+
 - 该标签的日志级别，如果未设置则返回 `MLOG_FILTER_LVL_ALL`
 
 **示例：**
+
 ```c
 uint8_t level = mlog_get_filter_tag_lvl("network");
 if (level == MLOG_FILTER_LVL_SILENT) {
@@ -581,16 +631,19 @@ void mlog_port_register(const MlogPortInterface* iface);
 **功能：** 注册移植层接口。
 
 **参数：**
+
 - `iface`：指向移植层接口结构体的指针
 
 **返回值：** 无
 
 **说明：**
+
 - 必须在 `mlog_init()` 之前调用
 - `iface` 中的 `NULL` 字段会被忽略
 - 通常使用 `mlog_port_get_default()` 获取默认接口
 
 **示例：**
+
 ```c
 // 注册默认移植层接口
 mlog_port_register(mlog_port_get_default());
@@ -617,10 +670,12 @@ const MlogPortInterface* mlog_port_get_default(void);
 **返回值：** 指向默认移植层接口的指针
 
 **说明：**
+
 - 返回在 `port/mlog_port.c` 中定义的默认接口
 - 用户需要在该文件中实现平台相关的回调函数
 
 **示例：**
+
 ```c
 mlog_port_register(mlog_port_get_default());
 ```
@@ -638,11 +693,13 @@ void mlog_output_lock(void);
 **返回值：** 无
 
 **说明：**
+
 - 用于多线程环境下保护日志输出
 - 必须与 `mlog_output_unlock()` 成对使用
 - 通常不需要手动调用，MLog 内部会自动处理
 
 **示例：**
+
 ```c
 mlog_output_lock();
 // 执行需要保护的操作
@@ -664,6 +721,7 @@ void mlog_output_unlock(void);
 **返回值：** 无
 
 **说明：**
+
 - 与 `mlog_output_lock()` 成对使用
 
 ---
@@ -679,6 +737,7 @@ void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t siz
 **功能：** 以十六进制格式转储数据。
 
 **参数：**
+
 - `name`：数据名称（用作日志标签）
 - `width`：每行显示的字节数（通常为 16 或 32）
 - `buf`：指向数据缓冲区的指针
@@ -687,11 +746,13 @@ void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t siz
 **返回值：** 无
 
 **说明：**
+
 - 以 DEBUG 级别输出
 - 同时显示十六进制值和 ASCII 字符
 - 输出格式：`D/HEX name: 地址范围: 十六进制数据  ASCII字符`
 
 **示例：**
+
 ```c
 uint8_t data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 mlog_hexdump("MyData", 16, data, sizeof(data));
@@ -709,6 +770,7 @@ void mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_
 **功能：** 设置断言失败时的钩子函数。
 
 **参数：**
+
 - `hook`：钩子函数指针，参数为：
   - `expr`：断言表达式字符串
   - `func`：函数名
@@ -717,10 +779,12 @@ void mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_
 **返回值：** 无
 
 **说明：**
+
 - 当 `MLOG_ASSERT()` 失败时会调用该钩子
 - 可以在钩子中实现自定义的断言处理（如系统复位）
 
 **示例：**
+
 ```c
 void my_assert_hook(const char* expr, const char* func, size_t line)
 {
@@ -742,16 +806,19 @@ void mlog_buf_enabled(bool enabled);
 **功能：** 启用或禁用缓冲输出模式。
 
 **参数：**
+
 - `enabled`：`true` 启用，`false` 禁用
 
 **返回值：** 无
 
 **说明：**
+
 - 需要在编译时定义 `MLOG_BUF_OUTPUT_ENABLE`
 - 启用后，日志会先写入缓冲区，减少输出设备调用
 - 适合高频率日志输出场景
 
 **示例：**
+
 ```c
 mlog_buf_enabled(true);  // 启用缓冲输出
 // ... 高频率日志输出
@@ -772,10 +839,12 @@ void mlog_flush(void);
 **返回值：** 无
 
 **说明：**
+
 - 仅在启用缓冲输出模式时有效
 - 将缓冲区中的所有日志立即输出到设备
 
 **示例：**
+
 ```c
 mlog_flush();
 ```
@@ -796,8 +865,8 @@ mlog_flush();
 
 然后可以使用以下简化宏：
 
-| 宏 | 等价于 | 说明 |
-|---|---|---|
+| 宏                         | 等价于                 | 说明         |
+| -------------------------- | ---------------------- | ------------ |
 | `log_a(...)` / `loga(...)` | `mlog_a(LOG_TAG, ...)` | 断言级别日志 |
 | `log_e(...)` / `loge(...)` | `mlog_e(LOG_TAG, ...)` | 错误级别日志 |
 | `log_w(...)` / `logw(...)` | `mlog_w(LOG_TAG, ...)` | 警告级别日志 |
@@ -806,6 +875,7 @@ mlog_flush();
 | `log_v(...)` / `logv(...)` | `mlog_v(LOG_TAG, ...)` | 详细级别日志 |
 
 **示例：**
+
 ```c
 #define LOG_TAG "Sensor"
 #define LOG_LVL MLOG_LVL_DEBUG
@@ -816,7 +886,7 @@ void read_sensor(void)
     log_i("Reading sensor data...");
     int temp = get_temperature();
     log_d("Temperature: %d°C", temp);
-    
+
     if (temp > 80) {
         log_w("Temperature too high!");
     }
@@ -832,13 +902,16 @@ MLOG_ASSERT(expression)
 **功能：** 断言检查，失败时输出错误日志。
 
 **参数：**
+
 - `expression`：要检查的表达式
 
 **说明：**
+
 - 需要在编译时定义 `MLOG_ASSERT_ENABLE`
 - 如果表达式为假，会调用断言钩子或输出断言日志
 
 **示例：**
+
 ```c
 MLOG_ASSERT(ptr != NULL);
 MLOG_ASSERT(value > 0 && value < 100);
@@ -857,6 +930,7 @@ assert(expression)  // 等同于 MLOG_ASSERT
 ```
 
 **说明：**
+
 - `MLOG_FMT_ALL` 等于所有格式选项的位或组合
 - 可用于 `mlog_set_fmt()` 函数
 
@@ -868,6 +942,7 @@ assert(expression)  // 等同于 MLOG_ASSERT
 ```
 
 **说明：**
+
 - `MLOG_FILTER_LVL_SILENT`：用于静默某个标签的所有日志
 - `MLOG_FILTER_LVL_ALL`：用于移除标签的级别过滤
 
@@ -962,6 +1037,7 @@ mlog_hexdump("RxPacket", 16, packet, sizeof(packet));
 ---
 
 **版本信息**
+
 - 文档版本：1.0
 - 最后更新：2026-01-07
 - 作者：liu (lbq08@foxmail.com)

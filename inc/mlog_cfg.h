@@ -9,8 +9,8 @@
  * @Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
  */
 
-#ifndef __INC_MLOG_CFG_H
-#define __INC_MLOG_CFG_H
+#ifndef MLOG_CFG_H_
+#define MLOG_CFG_H_
 
 
 /*---------------------------------------------------------------------------*/
@@ -19,13 +19,13 @@
 #define MLOG_ASSERT_ENABLE /* 使能断言检查 */
 
 
-#define MLOG_OUTPUT_LVL             MLOG_LVL_VERBOSE /* 设置静态输出日志级别。范围：从 MLOG_LVL_ASSERT 到 MLOG_LVL_VERBOSE */
-#define MLOG_LINE_BUF_SIZE          256              /* 每行日志的缓冲区大小 */
-#define MLOG_LINE_NUM_MAX_LEN       5                /* 每行日志的行号最大长度 */
-#define MLOG_FILTER_TAG_MAX_LEN     15               /* 输出过滤器的标签最大长度 */
-#define MLOG_FILTER_KW_MAX_LEN      16               /* 输出过滤器的关键字最大长度 */
-#define MLOG_FILTER_TAG_LVL_MAX_NUM 5                /* 输出过滤器的标签级别最大数量 */
-#define MLOG_NEWLINE_SIGN           "\n"             /* 输出换行符 */
+#define MLOG_OUTPUT_LVL       MLOG_LVL_VERBOSE /* 设置静态输出日志级别。范围：从 MLOG_LVL_ASSERT 到 MLOG_LVL_VERBOSE */
+#define MLOG_LINE_BUF_SIZE    256              /* 每行日志的缓冲区大小 */
+#define MLOG_LINE_NUM_MAX_LEN 5                /* 每行日志的行号最大长度 */
+#define MLOG_FILTER_TAG_MAX_LEN     15         /* 输出过滤器的标签最大长度 */
+#define MLOG_FILTER_KW_MAX_LEN      16         /* 输出过滤器的关键字最大长度 */
+#define MLOG_FILTER_TAG_LVL_MAX_NUM 5          /* 输出过滤器的标签级别最大数量 */
+#define MLOG_NEWLINE_SIGN           "\n"       /* 输出换行符 */
 
 /*---------------------------------------------------------------------------*/
 // #define USE_RTT_COLOR
@@ -40,12 +40,13 @@
     #define MLOG_COLOR_DEBUG   RTT_CTRL_TEXT_BRIGHT_CYAN    /* 调试: 亮青色 */
     #define MLOG_COLOR_VERBOSE RTT_CTRL_TEXT_BRIGHT_WHITE   /* 详细: 亮白色 */
 #else
-    #define MLOG_COLOR_ASSERT  (F_MAGENTA B_NULL S_NORMAL)
-    #define MLOG_COLOR_ERROR   (F_RED B_NULL S_NORMAL)
-    #define MLOG_COLOR_WARN    (F_YELLOW B_NULL S_NORMAL)
-    #define MLOG_COLOR_INFO    (F_CYAN B_NULL S_NORMAL)
-    #define MLOG_COLOR_DEBUG   (F_GREEN B_NULL S_NORMAL)
-    #define MLOG_COLOR_VERBOSE (F_BLUE B_NULL S_NORMAL)
+    /* ANSI 颜色格式: "前景色;背景色(可选);样式m"  参考: https://en.wikipedia.org/wiki/ANSI_escape_code */
+    #define MLOG_COLOR_ASSERT  "35;22m" /* 紫色 普通 */
+    #define MLOG_COLOR_ERROR   "31;22m" /* 红色 普通 */
+    #define MLOG_COLOR_WARN    "33;22m" /* 黄色 普通 */
+    #define MLOG_COLOR_INFO    "36;22m" /* 青色 普通 */
+    #define MLOG_COLOR_DEBUG   "32;22m" /* 绿色 普通 */
+    #define MLOG_COLOR_VERBOSE "34;22m" /* 蓝色 普通 */
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -62,4 +63,4 @@
 #define MLOG_MEMSET memset
 
 
-#endif /* __INC_MLOG_CFG_H */
+#endif /* MLOG_CFG_H_ */

@@ -9,8 +9,8 @@
  * @Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
  */
 
-#ifndef __INC_MLOG_H
-#define __INC_MLOG_H
+#ifndef MLOG_H_
+#define MLOG_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -53,15 +53,23 @@ extern "C"
         mlog_port_get_t_info_fn_t    get_t_info;
     } MlogPortInterface;
 
-    /* output log's level */
+    /* 日志级别：预处理器可用的整数宏（用于编译期 #if 过滤） */
+#define MLOG_LVL_ASSERT  0
+#define MLOG_LVL_ERROR   1
+#define MLOG_LVL_WARN    2
+#define MLOG_LVL_INFO    3
+#define MLOG_LVL_DEBUG   4
+#define MLOG_LVL_VERBOSE 5
+
+    /* 运行时类型安全的枚举（用于函数参数） */
     typedef enum
     {
-        MLOG_LVL_ASSERT = 0,
-        MLOG_LVL_ERROR,
-        MLOG_LVL_WARN,
-        MLOG_LVL_INFO,
-        MLOG_LVL_DEBUG,
-        MLOG_LVL_VERBOSE,
+        MLOG_LEVEL_ASSERT  = MLOG_LVL_ASSERT,
+        MLOG_LEVEL_ERROR   = MLOG_LVL_ERROR,
+        MLOG_LEVEL_WARN    = MLOG_LVL_WARN,
+        MLOG_LEVEL_INFO    = MLOG_LVL_INFO,
+        MLOG_LEVEL_DEBUG   = MLOG_LVL_DEBUG,
+        MLOG_LEVEL_VERBOSE = MLOG_LVL_VERBOSE,
     } MlogLevel;
 
 /* the output silent level and all level for filter setting */
@@ -78,9 +86,9 @@ extern "C"
         {                                                                                                              \
             if (!(EXPR))                                                                                               \
             {                                                                                                          \
-                if (mlog_assert_hook != NULL)                                                                          \
+                if (g_mlog_assert_hook != NULL)                                                                        \
                 {                                                                                                      \
-                    mlog_assert_hook(#EXPR, __func__, __LINE__);                                                       \
+                    g_mlog_assert_hook(#EXPR, __func__, __LINE__);                                                     \
                 }                                                                                                      \
                 else                                                                                                   \
                 {                                                                                                      \
@@ -183,34 +191,7 @@ extern "C"
     (MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME | MLOG_FMT_P_INFO | MLOG_FMT_T_INFO | MLOG_FMT_DIR | MLOG_FMT_FUNC |  \
      MLOG_FMT_LINE)
 
-    /* output log's tag filter */
-    typedef struct
-    {
-        uint8_t level;
-        char    tag[MLOG_FILTER_TAG_MAX_LEN + 1];
-        bool    tag_use_flag; /**< false : tag is no used   true: tag is used */
-    } MlogTagLvlFilter, *MlogTagLvlFilter_t;
-
-    /* output log's filter */
-    typedef struct
-    {
-        uint8_t          level;
-        char             tag[MLOG_FILTER_TAG_MAX_LEN + 1];
-        MlogTagLvlFilter tag_lvl[MLOG_FILTER_TAG_LVL_MAX_NUM];
-    } MlogFilter, *MlogFilter_t;
-
-    /* easy logger */
-    typedef struct
-    {
-        MlogFilter filter;
-        size_t     enabled_fmt_set[MLOG_LVL_TOTAL_NUM];
-        bool       init_ok;
-        bool       output_enabled;
-#ifdef MLOG_COLOR_ENABLE
-        bool text_color_enabled;
-#endif
-
-    } MLogger, *MLogger_t;
+    /* 内部结构体定义在 mlog.c 中，此处不暴露实现细节 */
 
     /* mlog.c */
     MlogErrCode mlog_init(void);
@@ -239,10 +220,10 @@ extern "C"
     /* Get default port interface - call mlog_port_register(mlog_port_get_default()) before mlog_init() */
     const MlogPortInterface* mlog_port_get_default(void);
 
-    extern void (*mlog_assert_hook)(const char* expr, const char* func, size_t line);
-    void               mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_t line));
-    void               mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t size);
-    MlogPortInterface* mlog_get_port_interface(void);
+    extern void (*g_mlog_assert_hook)(const char* expr, const char* func, size_t line);
+    void                     mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_t line));
+    void                     mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t size);
+    const MlogPortInterface* mlog_get_port_interface(void);
 #define mlog_a(tag, ...) mlog_assert(tag, __VA_ARGS__)
 #define mlog_e(tag, ...) mlog_error(tag, __VA_ARGS__)
 #define mlog_w(tag, ...) mlog_warn(tag, __VA_ARGS__)
@@ -303,6 +284,7 @@ extern "C"
 #endif
 
     /* mlog_buf.c */
+#ifdef MLOG_BUF_OUTPUT_ENABLE
     void   mlog_buf_enabled(bool enabled);
     void   mlog_flush(void);
     size_t mlog_flush_partial(size_t max_bytes);
@@ -310,9 +292,10 @@ extern "C"
     void   mlog_buf_reset_overflow_stats(void);
     size_t mlog_buf_get_used(void);
     size_t mlog_buf_get_free(void);
+#endif /* MLOG_BUF_OUTPUT_ENABLE */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __INC_MLOG_H */
+#endif /* MLOG_H_ */

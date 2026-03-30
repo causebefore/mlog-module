@@ -21,14 +21,14 @@
     #endif
 
 /* buffered output mode's buffer */
-static char log_buf[MLOG_BUF_OUTPUT_BUF_SIZE];
+static char s_log_buf[MLOG_BUF_OUTPUT_BUF_SIZE];
 /* log buffer current write size */
-static size_t buf_write_size = 0;
+static size_t s_buf_write_size = 0;
 /* buffered output mode enabled flag */
-static bool is_enabled = false;
+static bool s_is_enabled = false;
 /* overflow statistics */
-static uint32_t overflow_count = 0; /* 溢出丢弃次数 */
-static uint32_t overflow_bytes = 0; /* 溢出丢弃字节数 */
+static uint32_t s_overflow_count = 0; /* 溢出丢弃次数 */
+static uint32_t s_overflow_bytes = 0; /* 溢出丢弃字节数 */
 
 /**
  * @brief  获取溢出统计信息
@@ -37,14 +37,16 @@ static uint32_t overflow_bytes = 0; /* 溢出丢弃字节数 */
  */
 void mlog_buf_get_overflow_stats(uint32_t* count, uint32_t* bytes)
 {
+    mlog_output_lock();
     if (count != NULL)
     {
-        *count = overflow_count;
+        *count = s_overflow_count;
     }
     if (bytes != NULL)
     {
-        *bytes = overflow_bytes;
+        *bytes = s_overflow_bytes;
     }
+    mlog_output_unlock();
 }
 
 /**
@@ -52,8 +54,10 @@ void mlog_buf_get_overflow_stats(uint32_t* count, uint32_t* bytes)
  */
 void mlog_buf_reset_overflow_stats(void)
 {
-    overflow_count = 0;
-    overflow_bytes = 0;
+    mlog_output_lock();
+    s_overflow_count = 0;
+    s_overflow_bytes = 0;
+    mlog_output_unlock();
 }
 
 /**
@@ -62,7 +66,10 @@ void mlog_buf_reset_overflow_stats(void)
  */
 size_t mlog_buf_get_used(void)
 {
-    return buf_write_size;
+    mlog_output_lock();
+    size_t used = s_buf_write_size;
+    mlog_output_unlock();
+    return used;
 }
 
 /**
@@ -71,7 +78,10 @@ size_t mlog_buf_get_used(void)
  */
 size_t mlog_buf_get_free(void)
 {
-    return MLOG_BUF_OUTPUT_BUF_SIZE - buf_write_size;
+    mlog_output_lock();
+    size_t free_space = MLOG_BUF_OUTPUT_BUF_SIZE - s_buf_write_size;
+    mlog_output_unlock();
+    return free_space;
 }
 
 /**
@@ -83,37 +93,40 @@ size_t mlog_buf_get_free(void)
  */
 void mlog_buf_output(const char* log, size_t size)
 {
-    MlogPortInterface* iface = mlog_get_port_interface();
-    if (!is_enabled)
+    const MlogPortInterface* iface = mlog_get_port_interface();
+    if (!s_is_enabled)
     {
         /* 未启用缓冲模式，直接输出 */
-        iface->output(log, size);
+        if (iface->output != NULL)
+        {
+            iface->output(log, size);
+        }
         return;
     }
 
     /* 计算可用空间 */
-    size_t free_space = MLOG_BUF_OUTPUT_BUF_SIZE - buf_write_size;
+    size_t free_space = MLOG_BUF_OUTPUT_BUF_SIZE - s_buf_write_size;
 
     if (size <= free_space)
     {
         /* 空间足够，全部写入 */
-        memcpy(log_buf + buf_write_size, log, size);
-        buf_write_size += size;
+        memcpy(s_log_buf + s_buf_write_size, log, size);
+        s_buf_write_size += size;
     }
     else if (free_space > 0)
     {
         /* 空间不足，写入能写的部分，丢弃剩余 */
-        memcpy(log_buf + buf_write_size, log, free_space);
-        buf_write_size = MLOG_BUF_OUTPUT_BUF_SIZE;
+        memcpy(s_log_buf + s_buf_write_size, log, free_space);
+        s_buf_write_size = MLOG_BUF_OUTPUT_BUF_SIZE;
         /* 统计丢弃的数据 */
-        overflow_count++;
-        overflow_bytes += (size - free_space);
+        s_overflow_count++;
+        s_overflow_bytes += (size - free_space);
     }
     else
     {
         /* 完全没有空间，全部丢弃 */
-        overflow_count++;
-        overflow_bytes += size;
+        s_overflow_count++;
+        s_overflow_bytes += size;
     }
 }
 
@@ -123,9 +136,15 @@ void mlog_buf_output(const char* log, size_t size)
  */
 void mlog_flush(void)
 {
-    size_t             to_output;
-    MlogPortInterface* iface = mlog_get_port_interface();
-    if (buf_write_size == 0)
+    size_t                   to_output;
+    const MlogPortInterface* iface = mlog_get_port_interface();
+    if (s_buf_write_size == 0)
+    {
+        return;
+    }
+
+    /* P3: 接口函数判空保护 */
+    if (iface->output_lock == NULL || iface->output == NULL || iface->output_unlock == NULL)
     {
         return;
     }
@@ -134,15 +153,14 @@ void mlog_flush(void)
     iface->output_lock();
 
     /* 保存当前大小并重置（允许中断期间有新日志写入） */
-    to_output      = buf_write_size;
-    buf_write_size = 0;
+    to_output        = s_buf_write_size;
+    s_buf_write_size = 0;
 
     /* output log */
-    iface->output(log_buf, to_output);
+    iface->output(s_log_buf, to_output);
 
     /* unlock output */
     iface->output_unlock();
-    /* 不需要memset，下次写入会覆盖 */
 }
 
 /**
@@ -156,34 +174,41 @@ size_t mlog_flush_partial(size_t max_bytes)
 {
     size_t to_output;
 
-    if (buf_write_size == 0)
+    if (s_buf_write_size == 0)
     {
         return 0;
     }
-    MlogPortInterface* iface = mlog_get_port_interface();
+    const MlogPortInterface* iface = mlog_get_port_interface();
+
+    /* P3: 接口函数判空保护 */
+    if (iface->output_lock == NULL || iface->output == NULL || iface->output_unlock == NULL)
+    {
+        return 0;
+    }
+
     /* lock output */
     iface->output_lock();
 
     /* 计算本次输出量 */
-    to_output = buf_write_size;
+    to_output = s_buf_write_size;
     if (max_bytes > 0 && to_output > max_bytes)
     {
         to_output = max_bytes;
     }
 
     /* output log */
-    iface->output(log_buf, to_output);
+    iface->output(s_log_buf, to_output);
 
     /* 移动剩余数据到缓冲区头部 */
-    if (to_output < buf_write_size)
+    if (to_output < s_buf_write_size)
     {
-        size_t remaining = buf_write_size - to_output;
-        memmove(log_buf, log_buf + to_output, remaining);
-        buf_write_size = remaining;
+        size_t remaining = s_buf_write_size - to_output;
+        memmove(s_log_buf, s_log_buf + to_output, remaining);
+        s_buf_write_size = remaining;
     }
     else
     {
-        buf_write_size = 0;
+        s_buf_write_size = 0;
     }
 
     /* unlock output */
@@ -200,6 +225,6 @@ size_t mlog_flush_partial(size_t max_bytes)
  */
 void mlog_buf_enabled(bool enabled)
 {
-    is_enabled = enabled;
+    s_is_enabled = enabled;
 }
 #endif /* MLOG_BUF_OUTPUT_ENABLE */

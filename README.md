@@ -126,25 +126,25 @@ int main(void)
 {
     // 注册移植层接口
     mlog_port_register(mlog_port_get_default());
-    
+
     // 初始化 MLog
     mlog_init();
-    
+
     // 启动日志输出
     mlog_start();
-    
+
     // 使用日志功能
     mlog_i("main", "Hello, MLog!");
     mlog_d("main", "Debug message: value = %d", 42);
     mlog_w("main", "Warning: Low memory");
     mlog_e("main", "Error occurred!");
-    
+
     // 停止日志输出
     mlog_stop();
-    
+
     // 反初始化
     mlog_deinit();
-    
+
     return 0;
 }
 ```
@@ -181,7 +181,7 @@ void my_function(void)
 
 ```c
 // 设置编译时的最高日志级别
-// 可选值：MLOG_LVL_ASSERT, MLOG_LVL_ERROR, MLOG_LVL_WARN, 
+// 可选值：MLOG_LVL_ASSERT, MLOG_LVL_ERROR, MLOG_LVL_WARN,
 //        MLOG_LVL_INFO, MLOG_LVL_DEBUG, MLOG_LVL_VERBOSE
 #define MLOG_OUTPUT_LVL MLOG_LVL_VERBOSE
 ```
@@ -258,8 +258,8 @@ mlog_set_filter_tag("");
 ```c
 // 为 INFO 级别设置输出格式
 // 包含级别、标签、时间、函数名和行号
-mlog_set_fmt(MLOG_LVL_INFO, 
-             MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME | 
+mlog_set_fmt(MLOG_LVL_INFO,
+             MLOG_FMT_LVL | MLOG_FMT_TAG | MLOG_FMT_TIME |
              MLOG_FMT_FUNC | MLOG_FMT_LINE);
 
 // 使用所有格式
@@ -308,10 +308,10 @@ void example_basic_logging(void)
 void read_sensor(void)
 {
     int temperature = 25;
-    
+
     log_i("Reading sensor...");
     log_d("Temperature: %d°C", temperature);
-    
+
     if (temperature > 80) {
         log_w("Temperature too high!");
     }
@@ -336,13 +336,14 @@ void example_hexdump(void)
 {
     uint8_t data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
                       0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10};
-    
+
     // 以 16 字节宽度输出十六进制数据
     mlog_hexdump("DataBuffer", 16, data, sizeof(data));
 }
 ```
 
 输出示例：
+
 ```
 D/HEX DataBuffer: 0000-000F: 01 02 03 04 05 06 07 08  09 0A 0B 0C 0D 0E 0F 10  ................
 ```
@@ -353,7 +354,7 @@ D/HEX DataBuffer: 0000-000F: 01 02 03 04 05 06 07 08  09 0A 0B 0C 0D 0E 0F 10  .
 void example_assert(void)
 {
     int value = 10;
-    
+
     // 断言检查，如果条件为 false，输出错误信息
     MLOG_ASSERT(value > 0);
     MLOG_ASSERT(value < 100);
@@ -367,7 +368,7 @@ void my_assert_hook(const char* expr, const char* func, size_t line)
 {
     // 自定义断言处理：记录日志、触发复位等
     mlog_e("ASSERT", "Failed at %s:%zu - %s", func, line, expr);
-    
+
     // 可以在这里添加其他处理，如系统复位
     // system_reset();
 }
@@ -387,18 +388,18 @@ void example_filters(void)
     mlog_set_filter_lvl(MLOG_LVL_ERROR);
     mlog_i("test", "This won't be displayed");  // 不会输出
     mlog_e("test", "This will be displayed");   // 会输出
-    
+
     // 场景 2：只输出特定标签的日志
     mlog_set_filter_lvl(MLOG_LVL_VERBOSE);  // 恢复所有级别
     mlog_set_filter_tag("network");
     mlog_i("network", "Network event");     // 会输出
     mlog_i("sensor", "Sensor data");        // 不会输出
-    
+
     // 场景 3：为不同标签设置不同级别
     mlog_set_filter_tag("");  // 清除标签过滤
     mlog_set_filter_tag_lvl("network", MLOG_LVL_INFO);
     mlog_set_filter_tag_lvl("sensor", MLOG_LVL_DEBUG);
-    
+
     mlog_d("network", "Network debug");     // 不会输出
     mlog_i("network", "Network info");      // 会输出
     mlog_d("sensor", "Sensor debug");       // 会输出
@@ -412,15 +413,15 @@ void example_buffered_output(void)
 {
     // 启用缓冲输出（需要在 mlog_cfg.h 中定义 MLOG_BUF_OUTPUT_ENABLE）
     mlog_buf_enabled(true);
-    
+
     // 高频率日志输出
     for (int i = 0; i < 100; i++) {
         mlog_d("loop", "Iteration %d", i);
     }
-    
+
     // 手动刷新缓冲区，立即输出所有缓冲的日志
     mlog_flush();
-    
+
     // 禁用缓冲输出
     mlog_buf_enabled(false);
 }
@@ -436,7 +437,7 @@ void example_thread_safe_logging(void)
     // 多个线程可以同时调用日志函数
     mlog_i("thread1", "Message from thread 1");
     mlog_i("thread2", "Message from thread 2");
-    
+
     // 如果需要手动控制锁（高级用法）
     mlog_output_lock();
     mlog_raw("Critical section: ");
@@ -476,10 +477,10 @@ static MlogErrCode default_port_init(void)
 {
     // 初始化输出设备（如 UART）
     // uart_init(115200);
-    
+
     // 初始化互斥锁（如果使用 RTOS）
     // mutex_create(&log_mutex);
-    
+
     return MLOG_NO_ERR;
 }
 ```
@@ -491,13 +492,13 @@ static void default_port_output(const char* log, size_t size)
 {
     // 示例 1：输出到 UART
     // uart_send(log, size);
-    
+
     // 示例 2：输出到控制台（PC 平台）
     // fwrite(log, 1, size, stdout);
-    
+
     // 示例 3：输出到 RTT（J-Link）
     // SEGGER_RTT_Write(0, log, size);
-    
+
     // 示例 4：输出到自定义缓冲区
     // custom_buffer_write(log, size);
 }
@@ -522,7 +523,7 @@ static void default_port_output_lock(void)
 {
     // 裸机系统：关闭中断
     // __disable_irq();
-    
+
     // RTOS 系统：获取互斥锁
     // mutex_lock(&log_mutex);
 }
@@ -531,7 +532,7 @@ static void default_port_output_unlock(void)
 {
     // 裸机系统：开启中断
     // __enable_irq();
-    
+
     // RTOS 系统：释放互斥锁
     // mutex_unlock(&log_mutex);
 }
@@ -543,14 +544,14 @@ static void default_port_output_unlock(void)
 static const char* default_port_get_time(void)
 {
     static char time_str[16];
-    
+
     // 示例 1：使用系统滴答计数
     // uint32_t tick = HAL_GetTick();
     // snprintf(time_str, sizeof(time_str), "%lu", tick);
-    
+
     // 示例 2：使用 RTC
     // rtc_get_time_string(time_str, sizeof(time_str));
-    
+
     // 示例 3：返回固定字符串或空字符串
     return "";
 }
@@ -569,11 +570,11 @@ static const char* default_port_get_p_info(void)
 static const char* default_port_get_t_info(void)
 {
     static char thread_str[16];
-    
+
     // 示例：返回 RTOS 任务名称
     // const char* task_name = osThreadGetName(osThreadGetId());
     // snprintf(thread_str, sizeof(thread_str), "%s", task_name);
-    
+
     return "";
 }
 ```
@@ -701,7 +702,7 @@ static const char* linux_port_get_time(void)
     static char time_str[32];
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    snprintf(time_str, sizeof(time_str), "%ld.%06ld", 
+    snprintf(time_str, sizeof(time_str), "%ld.%06ld",
              tv.tv_sec, tv.tv_usec);
     return time_str;
 }

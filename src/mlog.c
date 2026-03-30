@@ -20,7 +20,7 @@
 /* Static port interface instance - initialized with NULL callbacks */
 static MlogPortInterface s_port = {0};
 
-MlogPortInterface* mlog_get_port_interface(void)
+const MlogPortInterface* mlog_get_port_interface(void)
 {
     return &s_port;
 }
@@ -153,12 +153,42 @@ extern void mlog_buf_output(const char* log, size_t size);
     #endif
 #endif /* MLOG_COLOR_ENABLE */
 
+/* 内部结构体定义（对外隐藏实现细节） */
+
+/* 按标签过滤的级别条目 */
+typedef struct
+{
+    uint8_t level;
+    char    tag[MLOG_FILTER_TAG_MAX_LEN + 1];
+    bool    tag_use_flag; /**< false: 未使用  true: 已使用 */
+} MlogTagLvlFilter;
+
+/* 输出过滤器 */
+typedef struct
+{
+    uint8_t          level;
+    char             tag[MLOG_FILTER_TAG_MAX_LEN + 1];
+    MlogTagLvlFilter tag_lvl[MLOG_FILTER_TAG_LVL_MAX_NUM];
+} MlogFilter;
+
+/* 日志主控结构体 */
+typedef struct
+{
+    MlogFilter filter;
+    size_t     enabled_fmt_set[MLOG_LVL_TOTAL_NUM];
+    bool       init_ok;
+    bool       output_enabled;
+#ifdef MLOG_COLOR_ENABLE
+    bool text_color_enabled;
+#endif
+} MLogger;
+
 /* MLogger object */
-static MLogger mlog;
+static MLogger s_mlog;
 /* every line log's buffer */
-static char log_buf[MLOG_LINE_BUF_SIZE] = {0};
+static char s_log_buf[MLOG_LINE_BUF_SIZE] = {0};
 /* level output info */
-static const char* level_output_info[] = {
+static const char* s_level_output_info[] = {
     [MLOG_LVL_ASSERT]  = "A/",
     [MLOG_LVL_ERROR]   = "E/",
     [MLOG_LVL_WARN]    = "W/",
@@ -176,7 +206,7 @@ static const char* level_output_info[] = {
 
 #ifdef MLOG_COLOR_ENABLE
 /* color output info */
-static const char* color_output_info[] = {
+static const char* s_color_output_info[] = {
     [MLOG_LVL_ASSERT]  = MLOG_COLOR_ASSERT,
     [MLOG_LVL_ERROR]   = MLOG_COLOR_ERROR,
     [MLOG_LVL_WARN]    = MLOG_COLOR_WARN,
@@ -187,7 +217,7 @@ static const char* color_output_info[] = {
 #endif /* MLOG_COLOR_ENABLE */
 
 /* Optimized macros (zero function call overhead) */
-#define GET_FMT_ENABLED(level, set)       (mlog.enabled_fmt_set[level] & (set))
+#define GET_FMT_ENABLED(level, set)       (s_mlog.enabled_fmt_set[level] & (set))
 #define GET_FMT_USED_PTR(level, set, arg) ((arg) && GET_FMT_ENABLED(level, set))
 #define GET_FMT_USED_INT(level, set, arg) ((arg) && GET_FMT_ENABLED(level, set))
 
@@ -205,14 +235,14 @@ static inline void set_filter_string(char* dst, const char* src, size_t max_len)
     }
 }
 
-static inline void output_log_line(const char* buf, size_t len)
+static inline void output_log_line(const char* log, size_t len)
 {
 #if defined(MLOG_BUF_OUTPUT_ENABLE)
-    mlog_buf_output(buf, len);
+    mlog_buf_output(log, len);
 #else
     if (s_port.output != NULL)
     {
-        s_port.output(buf, len);
+        s_port.output(log, len);
     }
 #endif
 }
@@ -240,13 +270,13 @@ size_t mlog_strcpy(size_t cur_len, char* dst, const char* src)
 static void mlog_set_filter_tag_lvl_default(void);
 
 /* MLogger assert hook */
-void (*mlog_assert_hook)(const char* expr, const char* func, size_t line);
+void (*g_mlog_assert_hook)(const char* expr, const char* func, size_t line);
 
 MlogErrCode mlog_init(void)
 {
     MlogErrCode result = MLOG_NO_ERR;
 
-    if (mlog.init_ok == true)
+    if (s_mlog.init_ok == true)
     {
         return result;
     }
@@ -261,10 +291,22 @@ MlogErrCode mlog_init(void)
         return result;
     }
 
+    /* 关键回调验证：output 必须已注册，否则日志无法输出 */
+    if (s_port.output == NULL)
+    {
+        return MLOG_ERR_PORT_INIT_FAIL;
+    }
+
 #ifdef MLOG_COLOR_ENABLE
     /* enable text color by default */
     mlog_set_text_color_enabled(true);
 #endif
+
+    /* 设置默认格式：全部启用 */
+    for (uint8_t i = 0; i < MLOG_LVL_TOTAL_NUM; i++)
+    {
+        s_mlog.enabled_fmt_set[i] = MLOG_FMT_ALL;
+    }
 
     /* set level is MLOG_LVL_VERBOSE */
     mlog_set_filter_lvl(MLOG_LVL_VERBOSE);
@@ -272,8 +314,7 @@ MlogErrCode mlog_init(void)
     /* set tag_level to default val */
     mlog_set_filter_tag_lvl_default();
 
-    mlog.init_ok = true;
-    mlog_i("mlog", "MLogger initialized successfully");
+    s_mlog.init_ok = true;
     return result;
 }
 
@@ -283,7 +324,7 @@ MlogErrCode mlog_init(void)
  */
 void mlog_deinit(void)
 {
-    if (!mlog.init_ok)
+    if (!s_mlog.init_ok)
     {
         return;
     }
@@ -294,7 +335,7 @@ void mlog_deinit(void)
         s_port.deinit();
     }
 
-    mlog.init_ok = false;
+    s_mlog.init_ok = false;
 }
 
 /**
@@ -306,7 +347,7 @@ static void mlog_set_output_enabled(bool enabled)
 {
     MLOG_ASSERT((enabled == false) || (enabled == true));
 
-    mlog.output_enabled = enabled;
+    s_mlog.output_enabled = enabled;
 }
 
 /**
@@ -314,7 +355,7 @@ static void mlog_set_output_enabled(bool enabled)
  */
 void mlog_start(void)
 {
-    if (!mlog.init_ok)
+    if (!s_mlog.init_ok)
     {
         return;
     }
@@ -329,7 +370,7 @@ void mlog_start(void)
 
 void mlog_stop(void)
 {
-    if (!mlog.init_ok)
+    if (!s_mlog.init_ok)
     {
         return;
     }
@@ -353,7 +394,7 @@ void mlog_set_text_color_enabled(bool enabled)
 {
     MLOG_ASSERT((enabled == false) || (enabled == true));
 
-    mlog.text_color_enabled = enabled;
+    s_mlog.text_color_enabled = enabled;
 }
 
 /**
@@ -363,7 +404,7 @@ void mlog_set_text_color_enabled(bool enabled)
  */
 bool mlog_get_text_color_enabled(void)
 {
-    return mlog.text_color_enabled;
+    return s_mlog.text_color_enabled;
 }
 #endif /* MLOG_COLOR_ENABLE */
 
@@ -378,7 +419,7 @@ void mlog_set_fmt(uint8_t level, size_t set)
 {
     MLOG_ASSERT(level <= MLOG_LVL_VERBOSE);
 
-    mlog.enabled_fmt_set[level] = set;
+    s_mlog.enabled_fmt_set[level] = set;
 }
 
 /**
@@ -401,7 +442,7 @@ void mlog_set_filter(uint8_t level, const char* tag)
 void mlog_set_filter_lvl(uint8_t level)
 {
     MLOG_ASSERT(level <= MLOG_LVL_VERBOSE);
-    mlog.filter.level = level;
+    s_mlog.filter.level = level;
 }
 
 /**
@@ -411,7 +452,7 @@ void mlog_set_filter_lvl(uint8_t level)
  */
 void mlog_set_filter_tag(const char* tag)
 {
-    set_filter_string(mlog.filter.tag, tag, MLOG_FILTER_TAG_MAX_LEN);
+    set_filter_string(s_mlog.filter.tag, tag, MLOG_FILTER_TAG_MAX_LEN);
 }
 
 /**
@@ -444,9 +485,9 @@ static void mlog_set_filter_tag_lvl_default(void)
     /* Optimized: use single memset for the entire structure */
     for (uint8_t i = 0; i < MLOG_FILTER_TAG_LVL_MAX_NUM; i++)
     {
-        mlog.filter.tag_lvl[i].tag[0]       = '\0';  // just clear first char
-        mlog.filter.tag_lvl[i].level        = MLOG_FILTER_LVL_SILENT;
-        mlog.filter.tag_lvl[i].tag_use_flag = false;
+        s_mlog.filter.tag_lvl[i].tag[0]       = '\0';  // just clear first char
+        s_mlog.filter.tag_lvl[i].level        = MLOG_FILTER_LVL_SILENT;
+        s_mlog.filter.tag_lvl[i].tag_use_flag = false;
     }
 }
 
@@ -473,7 +514,7 @@ void mlog_set_filter_tag_lvl(const char* tag, uint8_t level)
     MLOG_ASSERT(level <= MLOG_LVL_VERBOSE);
     MLOG_ASSERT(tag != NULL);
 
-    if (!mlog.init_ok || tag[0] == '\0')
+    if (!s_mlog.init_ok || tag[0] == '\0')
     {
         return;
     }
@@ -487,9 +528,9 @@ void mlog_set_filter_tag_lvl(const char* tag, uint8_t level)
     /* Single pass: find existing tag or first empty slot */
     for (i = 0; i < MLOG_FILTER_TAG_LVL_MAX_NUM; i++)
     {
-        if (mlog.filter.tag_lvl[i].tag_use_flag)
+        if (s_mlog.filter.tag_lvl[i].tag_use_flag)
         {
-            if (strncmp(tag, mlog.filter.tag_lvl[i].tag, MLOG_FILTER_TAG_MAX_LEN) == 0)
+            if (strncmp(tag, s_mlog.filter.tag_lvl[i].tag, MLOG_FILTER_TAG_MAX_LEN) == 0)
             {
                 found_idx = i;
                 break;  // early exit
@@ -507,23 +548,23 @@ void mlog_set_filter_tag_lvl(const char* tag, uint8_t level)
         if (level == MLOG_FILTER_LVL_ALL)
         {
             /* Remove filter */
-            mlog.filter.tag_lvl[found_idx].tag_use_flag = false;
-            mlog.filter.tag_lvl[found_idx].tag[0]       = '\0';
-            mlog.filter.tag_lvl[found_idx].level        = MLOG_FILTER_LVL_SILENT;
+            s_mlog.filter.tag_lvl[found_idx].tag_use_flag = false;
+            s_mlog.filter.tag_lvl[found_idx].tag[0]       = '\0';
+            s_mlog.filter.tag_lvl[found_idx].level        = MLOG_FILTER_LVL_SILENT;
         }
         else
         {
             /* Update level */
-            mlog.filter.tag_lvl[found_idx].level = level;
+            s_mlog.filter.tag_lvl[found_idx].level = level;
         }
     }
     else if (level != MLOG_FILTER_LVL_ALL && empty_idx >= 0)
     {
         /* Add new filter */
-        strncpy(mlog.filter.tag_lvl[empty_idx].tag, tag, MLOG_FILTER_TAG_MAX_LEN);
-        mlog.filter.tag_lvl[empty_idx].tag[MLOG_FILTER_TAG_MAX_LEN] = '\0';
-        mlog.filter.tag_lvl[empty_idx].level                        = level;
-        mlog.filter.tag_lvl[empty_idx].tag_use_flag                 = true;
+        strncpy(s_mlog.filter.tag_lvl[empty_idx].tag, tag, MLOG_FILTER_TAG_MAX_LEN);
+        s_mlog.filter.tag_lvl[empty_idx].tag[MLOG_FILTER_TAG_MAX_LEN] = '\0';
+        s_mlog.filter.tag_lvl[empty_idx].level                        = level;
+        s_mlog.filter.tag_lvl[empty_idx].tag_use_flag                 = true;
     }
     /* else: no space available or trying to remove non-existent tag - silently fail */
 
@@ -545,7 +586,7 @@ uint8_t mlog_get_filter_tag_lvl(const char* tag)
         return MLOG_FILTER_LVL_ALL;
     }
 
-    if (!mlog.init_ok || tag[0] == '\0')
+    if (!s_mlog.init_ok || tag[0] == '\0')
     {
         return MLOG_FILTER_LVL_ALL;
     }
@@ -557,10 +598,10 @@ uint8_t mlog_get_filter_tag_lvl(const char* tag)
     /* Linear search with early exit */
     for (uint8_t i = 0; i < MLOG_FILTER_TAG_LVL_MAX_NUM; i++)
     {
-        if (mlog.filter.tag_lvl[i].tag_use_flag &&
-            strncmp(tag, mlog.filter.tag_lvl[i].tag, MLOG_FILTER_TAG_MAX_LEN) == 0)
+        if (s_mlog.filter.tag_lvl[i].tag_use_flag &&
+            strncmp(tag, s_mlog.filter.tag_lvl[i].tag, MLOG_FILTER_TAG_MAX_LEN) == 0)
         {
-            level = mlog.filter.tag_lvl[i].level;
+            level = s_mlog.filter.tag_lvl[i].level;
             break;  // early exit
         }
     }
@@ -582,7 +623,7 @@ void mlog_raw_output(const char* format, ...)
     int     fmt_result;
 
     /* check output enabled */
-    if (!mlog.output_enabled)
+    if (!s_mlog.output_enabled)
     {
         return;
     }
@@ -590,11 +631,12 @@ void mlog_raw_output(const char* format, ...)
     /* args point to the first variable parameter */
     va_start(args, format);
 
+    /* 锁保护范围：格式化 + 输出共享 s_log_buf，必须在同一临界区 */
     /* lock output */
     mlog_output_lock();
 
     /* package log data to buffer */
-    fmt_result = vsnprintf(log_buf, MLOG_LINE_BUF_SIZE, format, args);
+    fmt_result = vsnprintf(s_log_buf, MLOG_LINE_BUF_SIZE, format, args);
 
     /* output converted log */
     if ((fmt_result > -1) && (fmt_result <= MLOG_LINE_BUF_SIZE))
@@ -606,10 +648,164 @@ void mlog_raw_output(const char* format, ...)
         log_len = MLOG_LINE_BUF_SIZE;
     }
     /* output log */
-    output_log_line(log_buf, log_len);
+    output_log_line(s_log_buf, log_len);
     mlog_output_unlock();
     va_end(args);
     ;
+}
+
+/**
+ * 格式化日志头部：颜色起始 + 级别 + 标签（含对齐填充）
+ * @return 写入 s_log_buf 的长度
+ */
+static size_t fmt_header_level_tag(uint8_t level, const char* tag, size_t tag_len)
+{
+    size_t log_len = 0;
+
+#ifdef MLOG_COLOR_ENABLE
+    if (s_mlog.text_color_enabled)
+    {
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, CSI_START);
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, s_color_output_info[level]);
+    }
+#endif
+
+    if (GET_FMT_ENABLED(level, MLOG_FMT_LVL))
+    {
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, s_level_output_info[level]);
+    }
+
+    if (GET_FMT_ENABLED(level, MLOG_FMT_TAG))
+    {
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, tag);
+        if (tag_len <= MLOG_FILTER_TAG_MAX_LEN / 2)
+        {
+            char   tag_space[MLOG_FILTER_TAG_MAX_LEN / 2 + 1];
+            size_t pad_len = (MLOG_FILTER_TAG_MAX_LEN / 2U) - tag_len;
+            memset(tag_space, ' ', pad_len);
+            tag_space[pad_len] = '\0';
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, tag_space);
+        }
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, " ");
+    }
+
+    return log_len;
+}
+
+/**
+ * 格式化时间/进程/线程信息段
+ */
+static size_t fmt_header_context(uint8_t level, size_t log_len)
+{
+    if (!GET_FMT_ENABLED(level, MLOG_FMT_TIME | MLOG_FMT_P_INFO | MLOG_FMT_T_INFO))
+    {
+        return log_len;
+    }
+
+    log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, "[");
+    if (GET_FMT_ENABLED(level, MLOG_FMT_TIME))
+    {
+        if (s_port.get_time != NULL)
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, s_port.get_time());
+        }
+        if (GET_FMT_ENABLED(level, MLOG_FMT_P_INFO | MLOG_FMT_T_INFO))
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, " ");
+        }
+    }
+    if (GET_FMT_ENABLED(level, MLOG_FMT_P_INFO))
+    {
+        if (s_port.get_p_info != NULL)
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, s_port.get_p_info());
+        }
+        if (GET_FMT_ENABLED(level, MLOG_FMT_T_INFO))
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, " ");
+        }
+    }
+    if (GET_FMT_ENABLED(level, MLOG_FMT_T_INFO))
+    {
+        if (s_port.get_t_info != NULL)
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, s_port.get_t_info());
+        }
+    }
+    log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, "] ");
+
+    return log_len;
+}
+
+/**
+ * 格式化源码位置段：(文件:行号 函数名)
+ */
+static size_t fmt_header_source(uint8_t level, const char* file, const char* func, long line, size_t log_len)
+{
+    if (!GET_FMT_USED_PTR(level, MLOG_FMT_DIR, file) && !GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func) &&
+        !GET_FMT_USED_INT(level, MLOG_FMT_LINE, line))
+    {
+        return log_len;
+    }
+
+    log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, "(");
+
+    if (GET_FMT_USED_PTR(level, MLOG_FMT_DIR, file))
+    {
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, file);
+        if (GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func))
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, ":");
+        }
+        else if (GET_FMT_USED_INT(level, MLOG_FMT_LINE, line))
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, " ");
+        }
+    }
+
+    if (GET_FMT_USED_INT(level, MLOG_FMT_LINE, line))
+    {
+        char line_num[MLOG_LINE_NUM_MAX_LEN + 1] = {0};
+        snprintf(line_num, MLOG_LINE_NUM_MAX_LEN, "%ld", line);
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, line_num);
+        if (GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func))
+        {
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, " ");
+        }
+    }
+
+    if (GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func))
+    {
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, func);
+    }
+
+    log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, ")");
+
+    return log_len;
+}
+
+/**
+ * 追加颜色结束符和换行符，处理溢出截断
+ */
+static size_t fmt_tail(size_t log_len)
+{
+#ifdef MLOG_COLOR_ENABLE
+    if (log_len + CSI_END_LEN + NEWLINE_LEN > MLOG_LINE_BUF_SIZE)
+    {
+        log_len = MLOG_LINE_BUF_SIZE - CSI_END_LEN - NEWLINE_LEN;
+    }
+    if (s_mlog.text_color_enabled)
+    {
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, CSI_END);
+    }
+#else
+    if (log_len + NEWLINE_LEN > MLOG_LINE_BUF_SIZE)
+    {
+        log_len = MLOG_LINE_BUF_SIZE - NEWLINE_LEN;
+    }
+#endif /* MLOG_COLOR_ENABLE */
+    log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, MLOG_NEWLINE_SIGN);
+    return log_len;
 }
 
 /**
@@ -622,188 +818,75 @@ void mlog_raw_output(const char* format, ...)
  * @param line line number
  * @param format output format
  * @param ... args
- *
  */
 void mlog_output(uint8_t level, const char* tag, const char* file, const char* func, const long line,
                  const char* format, ...)
 {
-    size_t  tag_len = strlen(tag), log_len = 0;
-    char    line_num[MLOG_LINE_NUM_MAX_LEN + 1]        = {0};
-    char    tag_sapce[MLOG_FILTER_TAG_MAX_LEN / 2 + 1] = {0};
-    va_list args;
-    int     fmt_result;
+    /* P1: 空指针防御 */
+    if (tag == NULL)
+    {
+        tag = "NULL";
+    }
+    /* P6: level 越界防御（MLOG_ASSERT 可被关闭，此处硬编码保护） */
+    if (level > MLOG_LVL_VERBOSE)
+    {
+        return;
+    }
 
     MLOG_ASSERT(level <= MLOG_LVL_VERBOSE);
 
     /* check output enabled */
-    if (!mlog.output_enabled)
+    if (!s_mlog.output_enabled)
     {
         return;
     }
     /* level filter */
-    if (level > mlog.filter.level || level > mlog_get_filter_tag_lvl(tag))
+    if (level > s_mlog.filter.level || level > mlog_get_filter_tag_lvl(tag))
     {
         return;
     }
-    else if (mlog.filter.tag[0] != '\0' && strncmp(tag, mlog.filter.tag, MLOG_FILTER_TAG_MAX_LEN) != 0)
+    else if (s_mlog.filter.tag[0] != '\0' && strncmp(tag, s_mlog.filter.tag, MLOG_FILTER_TAG_MAX_LEN) != 0)
     { /* tag filter: exact match */
         return;
     }
-    /* args point to the first variable parameter */
+
+    va_list args;
     va_start(args, format);
-    /* lock output */
+
+    /*
+     * 锁保护范围说明：
+     * s_log_buf 为静态共享缓冲区，格式化和输出必须在同一临界区内完成。
+     * 如果锁实现为 __disable_irq()，此处会较长时间关中断。
+     * 高频日志场景建议启用 MLOG_BUF_OUTPUT_ENABLE 缓冲模式，
+     * 将实际 I/O 延迟到 mlog_flush() 中执行，以缩短临界区时间。
+     */
     mlog_output_lock();
 
-#ifdef MLOG_COLOR_ENABLE
-    /* add CSI start sign and color info */
-    if (mlog.text_color_enabled)
-    {
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, CSI_START);
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, color_output_info[level]);
-    }
-#endif
+    /* 格式化日志头部 */
+    size_t log_len = fmt_header_level_tag(level, tag, strlen(tag));
+    log_len        = fmt_header_context(level, log_len);
+    log_len        = fmt_header_source(level, file, func, line, log_len);
 
-    /* package level info */
-    if (GET_FMT_ENABLED(level, MLOG_FMT_LVL))
-    {
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, level_output_info[level]);
-    }
-    /* package tag info */
-    if (GET_FMT_ENABLED(level, MLOG_FMT_TAG))
-    {
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, tag);
-        /* if the tag length is less than 50% MLOG_FILTER_TAG_MAX_LEN, then fill space */
-        if (tag_len <= MLOG_FILTER_TAG_MAX_LEN / 2)
-        {
-            size_t pad_len = (MLOG_FILTER_TAG_MAX_LEN / 2U) - tag_len;
-            memset(tag_sapce, ' ', pad_len);
-            tag_sapce[pad_len] = '\0';
-            log_len += MLOG_STRCPY(log_len, log_buf + log_len, tag_sapce);
-        }
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, " ");
-    }
-    /* package time, process and thread info */
-    if (GET_FMT_ENABLED(level, MLOG_FMT_TIME | MLOG_FMT_P_INFO | MLOG_FMT_T_INFO))
-    {
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, "[");
-        if (GET_FMT_ENABLED(level, MLOG_FMT_TIME))
-        {
-            if (s_port.get_time != NULL)
-            {
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, s_port.get_time());
-            }
-            if (GET_FMT_ENABLED(level, MLOG_FMT_P_INFO | MLOG_FMT_T_INFO))
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, " ");
-        }
-        if (GET_FMT_ENABLED(level, MLOG_FMT_P_INFO))
-        {
-            if (s_port.get_p_info != NULL)
-            {
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, s_port.get_p_info());
-            }
-            if (GET_FMT_ENABLED(level, MLOG_FMT_T_INFO))
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, " ");
-        }
-        if (GET_FMT_ENABLED(level, MLOG_FMT_T_INFO))
-        {
-            if (s_port.get_t_info != NULL)
-            {
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, s_port.get_t_info());
-            }
-        }
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, "] ");
-    }
-    /* package file directory and name, function name and line number info */
-    if (GET_FMT_USED_PTR(level, MLOG_FMT_DIR, file) || GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func) ||
-        GET_FMT_USED_INT(level, MLOG_FMT_LINE, line))
-    {
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, "(");
-        /* package file info */
-        if (GET_FMT_USED_PTR(level, MLOG_FMT_DIR, file))
-        {
-            log_len += MLOG_STRCPY(log_len, log_buf + log_len, file);
-            if (GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func))
-            {
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, ":");
-            }
-            else if (GET_FMT_USED_INT(level, MLOG_FMT_LINE, line))
-            {
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, " ");
-            }
-        }
-        /* package line info */
-        if (GET_FMT_USED_INT(level, MLOG_FMT_LINE, line))
-        {
-            snprintf(line_num, MLOG_LINE_NUM_MAX_LEN, "%ld", line);
-            log_len += MLOG_STRCPY(log_len, log_buf + log_len, line_num);
-            if (GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func))
-            {
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, " ");
-            }
-        }
-        /* package func info */
-        if (GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func))
-        {
-            log_len += MLOG_STRCPY(log_len, log_buf + log_len, func);
-        }
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, ")");
-    }
-    /* package other log data to buffer. '\0' must be added in the end by vsnprintf. */
-    fmt_result = vsnprintf(log_buf + log_len, MLOG_LINE_BUF_SIZE - log_len, format, args);
-
+    /* 格式化用户消息 */
+    int fmt_result = vsnprintf(s_log_buf + log_len, MLOG_LINE_BUF_SIZE - log_len, format, args);
     va_end(args);
-    /* calculate log length */
-    if ((log_len + fmt_result <= MLOG_LINE_BUF_SIZE) && (fmt_result > -1))
+
+    if ((fmt_result > -1) && (log_len + (size_t) fmt_result <= MLOG_LINE_BUF_SIZE))
     {
-        log_len += fmt_result;
+        log_len += (size_t) fmt_result;
     }
     else
     {
-        /* using max length */
         log_len = MLOG_LINE_BUF_SIZE;
     }
-    /* overflow check and reserve some space for CSI end sign and newline sign */
-#ifdef MLOG_COLOR_ENABLE
-    if (log_len + CSI_END_LEN + NEWLINE_LEN > MLOG_LINE_BUF_SIZE)
-    {
-        /* using max length */
-        log_len = MLOG_LINE_BUF_SIZE;
-        /* reserve some space for CSI end sign */
-        log_len -= CSI_END_LEN;
-#else
-    if (log_len + NEWLINE_LEN > MLOG_LINE_BUF_SIZE)
-    {
-        /* using max length */
-        log_len = MLOG_LINE_BUF_SIZE;
-#endif /* MLOG_COLOR_ENABLE */
-        /* reserve some space for newline sign */
-        log_len -= NEWLINE_LEN;
-    }
-#ifdef MLOG_COLOR_ENABLE
-    /* add CSI end sign */
-    if (mlog.text_color_enabled)
-    {
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, CSI_END);
-    }
-#endif
 
-    /* package newline sign */
-    log_len += MLOG_STRCPY(log_len, log_buf + log_len, MLOG_NEWLINE_SIGN);
-    /* output log */
-#if defined(MLOG_BUF_OUTPUT_ENABLE)
-    mlog_buf_output(log_buf, log_len);
-#else
-    if (s_port.output != NULL)
-    {
-        s_port.output(log_buf, log_len);
-    }
-#endif
-    /* clear log buffer */
-    memset(log_buf, 0, sizeof(log_buf));
-    /* unlock output */
+    /* 追加颜色结束符和换行 */
+    log_len = fmt_tail(log_len);
+
+    /* 输出日志 */
+    output_log_line(s_log_buf, log_len);
+
     mlog_output_unlock();
-
-    /* No need to clear entire buffer - will be overwritten on next use */
 }
 
 /**
@@ -813,7 +896,7 @@ void mlog_output(uint8_t level, const char* tag, const char* file, const char* f
  */
 void mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_t line))
 {
-    mlog_assert_hook = hook;
+    g_mlog_assert_hook = hook;
 }
 
 /**
@@ -826,7 +909,7 @@ void mlog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_
  */
 void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t size)
 {
-#define __is_print(ch) ((unsigned int) ((ch) - ' ') < 127u - ' ')
+#define IS_PRINTABLE(ch) ((unsigned int) ((ch) - ' ') < 127u - ' ')
 
     uint16_t       i, j;
     uint16_t       log_len        = 0;
@@ -834,17 +917,23 @@ void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t siz
     char           dump_string[8] = {0};
     int            fmt_result;
 
-    if (!mlog.output_enabled)
+    /* P4/P5: 参数合法性防御 */
+    if (name == NULL || buf == NULL || width == 0 || size == 0)
+    {
+        return;
+    }
+
+    if (!s_mlog.output_enabled)
     {
         return;
     }
 
     /* level filter */
-    if (MLOG_LVL_DEBUG > mlog.filter.level)
+    if (MLOG_LVL_DEBUG > s_mlog.filter.level)
     {
         return;
     }
-    else if (mlog.filter.tag[0] != '\0' && strncmp(name, mlog.filter.tag, MLOG_FILTER_TAG_MAX_LEN) != 0)
+    else if (s_mlog.filter.tag[0] != '\0' && strncmp(name, s_mlog.filter.tag, MLOG_FILTER_TAG_MAX_LEN) != 0)
     { /* tag filter: exact match */
         return;
     }
@@ -855,7 +944,7 @@ void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t siz
     for (i = 0; i < size; i += width)
     {
         /* package header */
-        fmt_result = snprintf(log_buf, MLOG_LINE_BUF_SIZE, "D/HEX %s: %04X-%04X: ", name, i, i + width - 1);
+        fmt_result = snprintf(s_log_buf, MLOG_LINE_BUF_SIZE, "D/HEX %s: %04X-%04X: ", name, i, i + width - 1);
         /* calculate log length */
         if ((fmt_result > -1) && (fmt_result <= MLOG_LINE_BUF_SIZE))
         {
@@ -876,20 +965,20 @@ void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t siz
             {
                 strncpy(dump_string, "   ", sizeof(dump_string));
             }
-            log_len += MLOG_STRCPY(log_len, log_buf + log_len, dump_string);
+            log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, dump_string);
             if ((j + 1) % 8 == 0)
             {
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, " ");
+                log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, " ");
             }
         }
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, "  ");
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, "  ");
         /* dump char for hex */
         for (j = 0; j < width; j++)
         {
             if (i + j < size)
             {
-                snprintf(dump_string, sizeof(dump_string), "%c", __is_print(buf_p[i + j]) ? buf_p[i + j] : '.');
-                log_len += MLOG_STRCPY(log_len, log_buf + log_len, dump_string);
+                snprintf(dump_string, sizeof(dump_string), "%c", IS_PRINTABLE(buf_p[i + j]) ? buf_p[i + j] : '.');
+                log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, dump_string);
             }
         }
         /* overflow check and reserve some space for newline sign */
@@ -898,18 +987,17 @@ void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t siz
             log_len = MLOG_LINE_BUF_SIZE - NEWLINE_LEN;
         }
         /* package newline sign */
-        log_len += MLOG_STRCPY(log_len, log_buf + log_len, MLOG_NEWLINE_SIGN);
+        log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, MLOG_NEWLINE_SIGN);
         /* do log output */
 #if defined(MLOG_BUF_OUTPUT_ENABLE)
-        mlog_buf_output(log_buf, log_len);
+        mlog_buf_output(s_log_buf, log_len);
 #else
         if (s_port.output != NULL)
         {
-            s_port.output(log_buf, log_len);
+            s_port.output(s_log_buf, log_len);
         }
 #endif
     }
     /* unlock output */
     mlog_output_unlock();
-    /* No need to clear buffer - will be reused */
 }
