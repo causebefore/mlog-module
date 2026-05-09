@@ -21,6 +21,45 @@ MLog 是一个专为嵌入式系统设计的 C 语言日志库，提供了灵活
 - **平台无关**：通过移植层接口，可以轻松适配到不同的硬件平台
 - **性能优化**：支持缓冲输出模式，减少 I/O 调用次数，提高性能
 
+## 项目初始化
+
+本仓库已提供最小可用初始化工程，默认包含：
+
+- 核心静态库构建入口：`CMakeLists.txt`
+- 裸机最小示例：`examples/baremetal_minimal/main.c`
+- 可替换的移植层示例：`examples/baremetal_minimal/mlog_port_minimal.c`
+
+### 1. 生成构建目录
+
+```bash
+cmake -S . -B build
+```
+
+### 2. 编译
+
+```bash
+cmake --build build
+```
+
+编译后会生成：
+
+- `mlog` 静态库
+- `mlog_example` 示例可执行文件（用于验证初始化流程）
+
+### 3. 在 Cortex-M 裸机工程中接入
+
+1. 将 `inc/` 与 `src/` 加入你的工程。
+2. 参考 `examples/baremetal_minimal/mlog_port_minimal.c` 实现平台输出：
+   - 重写 `mlog_port_hw_write()`，对接 UART/SWO/RTT。
+   - 可选重写 `mlog_port_irq_save()/mlog_port_irq_restore()` 实现临界区保护。
+3. 启动阶段调用：
+
+```c
+mlog_port_register(mlog_port_get_default());
+mlog_init();
+mlog_start();
+```
+
 ## 主要特性
 
 ### 1. 多级日志级别
@@ -721,7 +760,7 @@ static const char* linux_port_get_time(void)
 
 ## 许可证
 
-版权所有 (c) 2025 liu (lbq08@foxmail.com)
+版权所有 (c) 2025 liu (<lbq08@foxmail.com>)
 
 根据源代码文件中的版权声明，本项目的所有权利由作者保留。
 
@@ -742,5 +781,5 @@ Copyright (c) 2025 by liu lbq08@foxmail.com, All Rights Reserved.
 
 ## 相关链接
 
-- GitHub 仓库：https://github.com/causebefore/mlog-module
-- 作者邮箱：lbq08@foxmail.com
+- GitHub 仓库：<https://github.com/causebefore/mlog-module>
+- 作者邮箱：<lbq08@foxmail.com>
