@@ -14,6 +14,8 @@
 /*
  * 用户可在应用层实现该函数，将日志输出到 UART/SWO/RTT 等接口。
  * 默认弱实现为空，保证模块可先集成后替换。
+ * 该函数返回前必须已经消费或复制 log；若使用 DMA/队列等异步输出，
+ * 应在移植层自备缓冲区，不能长期保存 log 指针。
  */
 MLOG_WEAK void mlog_port_hw_write(const char* log, size_t size)
 {

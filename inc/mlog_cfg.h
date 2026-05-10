@@ -23,7 +23,6 @@
 #define MLOG_LINE_BUF_SIZE    256              /* 每行日志的缓冲区大小 */
 #define MLOG_LINE_NUM_MAX_LEN 5                /* 每行日志的行号最大长度 */
 #define MLOG_FILTER_TAG_MAX_LEN     15         /* 输出过滤器的标签最大长度 */
-#define MLOG_FILTER_KW_MAX_LEN      16         /* 输出过滤器的关键字最大长度 */
 #define MLOG_FILTER_TAG_LVL_MAX_NUM 5          /* 输出过滤器的标签级别最大数量 */
 #define MLOG_NEWLINE_SIGN           "\n"       /* 输出换行符 */
 
@@ -57,10 +56,8 @@
 #define MLOG_FMT_USING_LINE
 
 /*---------------------------------------------------------------------------*/
-/* 内部使用的字符串和内存操作函数 */
+/* 内部使用的字符串操作函数 */
 #define MLOG_STRCPY mlog_strcpy
-#define MLOG_MEMCPY memcpy
-#define MLOG_MEMSET memset
 
 
 #endif /* MLOG_CFG_H_ */

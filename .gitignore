@@ -10,6 +10,10 @@ __pycache__/
 *.pyc
 *.pyo
 
+# MLog serial logger runtime files
+logs/
+.mlog/
+
 # 编译产物
 build/
 cmake-build-*/

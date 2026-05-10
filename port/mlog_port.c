@@ -34,6 +34,12 @@ static void default_port_deinit(void)
 
 static void default_port_output(const char* log, size_t size)
 {
+    /*
+     * output() must consume or copy `log` before returning. If shell_log() is
+     * blocking, mlog's output lock may be held for the whole transfer, which can
+     * increase interrupt latency when the lock disables IRQs. If shell_log()
+     * starts DMA/asynchronous output and returns early, copy the data here first.
+     */
     shell_log(log, (int) size);
 }
 
