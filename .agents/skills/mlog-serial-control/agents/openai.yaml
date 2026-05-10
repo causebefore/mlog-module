@@ -1,0 +1,4 @@
+interface:
+  display_name: "MLog Serial Control"
+  short_description: "Control and read MLog serial captures"
+  default_prompt: "Use $mlog-serial-control to start a MLog serial capture and read the JSONL log."

@@ -5,6 +5,7 @@
 ## 目录
 
 - [项目简介](#项目简介)
+- [Python 串口日志工具](#python-串口日志工具)
 - [主要特性](#主要特性)
 - [快速开始](#快速开始)
 - [配置说明](#配置说明)
@@ -60,6 +61,46 @@ mlog_init();
 mlog_start();
 ```
 
+## Python 串口日志工具
+
+仓库提供 `tools/mlog_serial_logger.py`，用于配合 MLog 串口输出记录本地日志。工具会同时生成原始日志和 agent 易读的结构化日志：
+
+- `logs/mlog_<session>.raw.log`：串口原始字节，完整保留 ANSI 颜色和换行。
+- `logs/mlog_<session>.jsonl`：逐行 JSONL，agent 优先读取该文件。
+- `logs/mlog_<session>.meta.json`：采集会话元信息，包含串口、波特率、状态、字节数、行数和文件路径。
+
+安装依赖：
+
+```bash
+pip install -r requirements.txt
+```
+
+前台调试：
+
+```bash
+python tools/mlog_serial_logger.py run --port COM3 --baud 115200
+```
+
+后台采集并输出 JSON：
+
+```bash
+python tools/mlog_serial_logger.py ports --json
+python tools/mlog_serial_logger.py start --port COM3 --baud 115200 --json
+python tools/mlog_serial_logger.py status --json
+python tools/mlog_serial_logger.py tail --lines 20 --json
+python tools/mlog_serial_logger.py stop --json
+```
+
+给 agent 使用时，应优先读取 `meta.json` 中的 `files.jsonl` 路径，不要解析人类可读的控制台输出。JSONL 每行包含：
+
+- `seq`：行序号。
+- `pc_time`：PC 接收时间。
+- `text`：去掉 ANSI 颜色和行尾换行后的文本。
+- `raw_offset` / `raw_len`：该行在 `.raw.log` 中的原始字节位置。
+- `complete`：是否收到完整换行。
+
+仓库同时提供 `.agents/skills/mlog-serial-control/SKILL.md`，agent 需要采集、查询或停止串口日志时可使用 `$mlog-serial-control`。
+
 ## 主要特性
 
 ### 1. 多级日志级别
@@ -100,9 +141,9 @@ mlog_start();
 
 ### 5. 缓冲输出模式
 
-- 高频率日志场景下，使用缓冲模式减少输出设备调用
-- 提高整体性能
-- 支持手动刷新缓冲区
+- 高频率日志场景下，使用环形缓冲减少输出设备调用
+- 按 FIFO 顺序刷新，满时丢弃新写入的数据并记录溢出统计
+- 支持手动全量刷新或分块刷新缓冲区
 
 ### 6. 实用工具功能
 
@@ -120,7 +161,7 @@ mlog_start();
 
 ### 目录结构
 
-```
+```txt
 mlog-module/
 ├── inc/              # 头文件目录
 │   ├── mlog.h       # 主头文件，包含 API 声明
@@ -264,7 +305,7 @@ void my_function(void)
 ```c
 // 启用缓冲输出模式
 #define MLOG_BUF_OUTPUT_ENABLE
-#define MLOG_BUF_OUTPUT_BUF_SIZE 2048    // 缓冲区大小（字节）
+#define MLOG_BUF_OUTPUT_BUF_SIZE 2048    // 环形缓冲区大小（字节）
 ```
 
 ### 运行时配置 API
@@ -383,7 +424,7 @@ void example_hexdump(void)
 
 输出示例：
 
-```
+```txt
 D/HEX DataBuffer: 0000-000F: 01 02 03 04 05 06 07 08  09 0A 0B 0C 0D 0E 0F 10  ................
 ```
 
@@ -394,10 +435,17 @@ void example_assert(void)
 {
     int value = 10;
 
-    // 断言检查，如果条件为 false，输出错误信息
+    // 断言检查，如果条件为 false，触发断言失败处理
     MLOG_ASSERT(value > 0);
     MLOG_ASSERT(value < 100);
 }
+```
+
+默认不会定义标准名称 `assert`，避免污染全局命名空间。若确实需要 `assert(expression)` 作为 `MLOG_ASSERT(expression)` 的别名，可在包含 `mlog.h` 前定义：
+
+```c
+#define MLOG_USING_ASSERT_ALIAS
+#include <mlog.h>
 ```
 
 ### 自定义断言钩子
@@ -453,7 +501,7 @@ void example_buffered_output(void)
     // 启用缓冲输出（需要在 mlog_cfg.h 中定义 MLOG_BUF_OUTPUT_ENABLE）
     mlog_buf_enabled(true);
 
-    // 高频率日志输出
+    // 高频率日志输出会先进入 FIFO 环形缓冲
     for (int i = 0; i < 100; i++) {
         mlog_d("loop", "Iteration %d", i);
     }
@@ -498,7 +546,7 @@ typedef struct
 {
     mlog_port_init_fn_t          init;           // 初始化函数
     mlog_port_deinit_fn_t        deinit;         // 反初始化函数
-    mlog_port_output_fn_t        output;         // 日志输出函数
+    mlog_port_output_fn_t        output;         // 日志输出函数，返回前必须消费或复制 log
     mlog_port_output_lock_fn_t   output_lock;    // 输出锁定函数
     mlog_port_output_unlock_fn_t output_unlock;  // 输出解锁函数
     mlog_port_get_time_fn_t      get_time;       // 获取时间戳函数
@@ -506,6 +554,8 @@ typedef struct
     mlog_port_get_t_info_fn_t    get_t_info;     // 获取线程信息函数
 } MlogPortInterface;
 ```
+
+`output(log, size)` 的实现必须在返回前完成对 `log` 数据的消费，或者复制到移植层自己的缓冲区。`log` 指向日志库内部临时缓冲区，使用 DMA、RTOS 队列、后台任务等异步输出时，不能保存该指针后延迟使用。阻塞式输出数据生命周期安全，但如果 `output_lock()` 通过关中断保护日志缓冲区，需要评估输出耗时对中断延迟的影响。
 
 ### 必须实现的接口
 
@@ -540,8 +590,12 @@ static void default_port_output(const char* log, size_t size)
 
     // 示例 4：输出到自定义缓冲区
     // custom_buffer_write(log, size);
+
+    // 若改为 DMA/队列等异步输出，必须先复制 log 内容。
 }
 ```
+
+缓冲区满时不会阻塞当前日志调用，超出容量的新数据会被丢弃。可通过 `mlog_buf_get_overflow_stats()` 获取丢弃次数和字节数，并用 `mlog_buf_reset_overflow_stats()` 清零统计。
 
 ### 可选实现的接口
 
@@ -651,6 +705,7 @@ extern UART_HandleTypeDef huart1;
 
 static void stm32_port_output(const char* log, size_t size)
 {
+    // 阻塞发送：函数返回时 HAL 已经消费完 log 数据。
     HAL_UART_Transmit(&huart1, (uint8_t*)log, size, HAL_MAX_DELAY);
 }
 

@@ -11,6 +11,7 @@
 - [过滤器 API](#过滤器-api)
 - [移植层 API](#移植层-api)
 - [实用工具 API](#实用工具-api)
+- [Python 串口日志工具](#python-串口日志工具)
 - [宏定义](#宏定义)
 
 ---
@@ -83,7 +84,7 @@ typedef struct
 {
     mlog_port_init_fn_t          init;           // 初始化回调
     mlog_port_deinit_fn_t        deinit;         // 反初始化回调
-    mlog_port_output_fn_t        output;         // 输出回调
+    mlog_port_output_fn_t        output;         // 输出回调，返回前必须消费或复制 log
     mlog_port_output_lock_fn_t   output_lock;    // 输出锁定回调
     mlog_port_output_unlock_fn_t output_unlock;  // 输出解锁回调
     mlog_port_get_time_fn_t      get_time;       // 获取时间回调
@@ -91,6 +92,12 @@ typedef struct
     mlog_port_get_t_info_fn_t    get_t_info;     // 获取线程信息回调
 } MlogPortInterface;
 ```
+
+**输出回调契约：**
+
+- `output(log, size)` 必须在函数返回前完成对 `log` 数据的消费，或者把数据复制到移植层自己的缓冲区。
+- 如果使用 UART DMA、RTOS 队列、后台任务等异步输出方式，不能保存 `log` 指针后延迟使用；该指针指向日志库内部临时缓冲区，后续日志可能覆盖其内容。
+- 如果 `output()` 是阻塞式发送，数据生命周期是安全的，但需要评估 `output_lock()` 若关闭中断时带来的中断延迟。
 
 ---
 
@@ -641,6 +648,7 @@ void mlog_port_register(const MlogPortInterface* iface);
 - 必须在 `mlog_init()` 之前调用
 - `iface` 中的 `NULL` 字段会被忽略
 - 通常使用 `mlog_port_get_default()` 获取默认接口
+- `iface->output` 的实现必须遵守同步消费契约；异步/DMA 输出需要在 port 层复制数据
 
 **示例：**
 
@@ -803,7 +811,7 @@ mlog_assert_set_hook(my_assert_hook);
 void mlog_buf_enabled(bool enabled);
 ```
 
-**功能：** 启用或禁用缓冲输出模式。
+**功能：** 启用或禁用环形缓冲输出模式。
 
 **参数：**
 
@@ -814,15 +822,16 @@ void mlog_buf_enabled(bool enabled);
 **说明：**
 
 - 需要在编译时定义 `MLOG_BUF_OUTPUT_ENABLE`
-- 启用后，日志会先写入缓冲区，减少输出设备调用
+- 启用后，日志会先写入 FIFO 环形缓冲区，减少输出设备调用
 - 适合高频率日志输出场景
+- 缓冲区满时不会阻塞，超出容量的新数据会被丢弃，并累计溢出统计
 
 **示例：**
 
 ```c
 mlog_buf_enabled(true);  // 启用缓冲输出
 // ... 高频率日志输出
-mlog_flush();            // 刷新缓冲区
+mlog_flush();            // 按 FIFO 顺序刷新缓冲区
 mlog_buf_enabled(false); // 禁用缓冲输出
 ```
 
@@ -832,7 +841,7 @@ mlog_buf_enabled(false); // 禁用缓冲输出
 void mlog_flush(void);
 ```
 
-**功能：** 刷新日志缓冲区，立即输出所有缓冲的日志。
+**功能：** 刷新日志环形缓冲区，立即输出所有缓冲的日志。
 
 **参数：** 无
 
@@ -841,13 +850,64 @@ void mlog_flush(void);
 **说明：**
 
 - 仅在启用缓冲输出模式时有效
-- 将缓冲区中的所有日志立即输出到设备
+- 将缓冲区中的所有日志按 FIFO 顺序立即输出到设备
+- 刷新后缓冲区读写位置会复位为空
 
 **示例：**
 
 ```c
 mlog_flush();
 ```
+
+---
+
+## Python 串口日志工具
+
+仓库提供 `tools/mlog_serial_logger.py`，用于从串口采集 MLog 输出，并同时生成原始日志和 agent 易读的结构化日志。
+
+### 安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+### 命令概览
+
+| 命令 | 用途 |
+| ---- | ---- |
+| `ports --json` | 列出可用串口 |
+| `run --port COM3 --baud 115200` | 前台采集，实时打印并写入日志 |
+| `start --port COM3 --baud 115200 --json` | 后台启动采集会话 |
+| `status [--session NAME] --json` | 查询采集会话状态 |
+| `stop [--session NAME] --json` | 请求后台采集优雅停止 |
+| `list --json` | 列出采集会话 |
+| `tail [--session NAME] --lines N [--json]` | 查看最近的结构化日志记录 |
+
+### 采集文件
+
+每次采集会生成以下文件：
+
+- `logs/mlog_<session>.raw.log`：串口原始字节，完整保留 ANSI 颜色和换行。
+- `logs/mlog_<session>.jsonl`：逐行 JSONL，agent 优先读取该文件。
+- `logs/mlog_<session>.meta.json`：采集会话元信息，包含串口、波特率、状态、字节数、行数和文件路径。
+
+JSONL 每行包含：
+
+| 字段 | 说明 |
+| ---- | ---- |
+| `seq` | 行序号 |
+| `pc_time` | PC 接收时间 |
+| `text` | 去掉 ANSI 颜色和行尾换行后的文本 |
+| `raw_offset` | 该行在 `.raw.log` 中的起始字节偏移 |
+| `raw_len` | 该行在 `.raw.log` 中的原始字节长度 |
+| `complete` | 是否收到完整换行 |
+
+### Agent 使用约定
+
+- 自动化控制时使用 `--json`，stdout 只解析 JSON。
+- 日志分析优先读取 `meta.json` 中的 `files.jsonl` 路径。
+- 需要还原现场字节时，再使用 `raw_offset` / `raw_len` 读取 `.raw.log`。
+- 不要解析人类可读的控制台输出作为状态来源。
 
 ---
 
@@ -899,7 +959,7 @@ void read_sensor(void)
 MLOG_ASSERT(expression)
 ```
 
-**功能：** 断言检查，失败时输出错误日志。
+**功能：** 断言检查，失败时进入统一断言失败处理。
 
 **参数：**
 
@@ -908,7 +968,9 @@ MLOG_ASSERT(expression)
 **说明：**
 
 - 需要在编译时定义 `MLOG_ASSERT_ENABLE`
-- 如果表达式为假，会调用断言钩子或输出断言日志
+- 如果表达式为假，会调用 `mlog_assert_failed()`
+- 默认断言失败动作是死循环，可通过 `MLOG_ASSERT_FAILED_ACTION()` 覆盖
+- 断言失败默认不再调用日志输出，避免日志库内部异常时递归进入日志系统
 
 **示例：**
 
@@ -917,9 +979,11 @@ MLOG_ASSERT(ptr != NULL);
 MLOG_ASSERT(value > 0 && value < 100);
 ```
 
-也可以使用简化形式：
+默认不会定义标准名称 `assert`，避免与 `<assert.h>` 或用户自定义宏冲突。若确实需要简化形式，可在包含 `mlog.h` 前定义 `MLOG_USING_ASSERT_ALIAS`：
 
 ```c
+#define MLOG_USING_ASSERT_ALIAS
+#include <mlog.h>
 assert(expression)  // 等同于 MLOG_ASSERT
 ```
 
