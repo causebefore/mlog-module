@@ -270,7 +270,6 @@ void my_function(void)
 
 ```c
 #define MLOG_LINE_BUF_SIZE 256           // 单行日志缓冲区大小（字节）
-#define MLOG_LINE_NUM_MAX_LEN 5          // 行号最大长度
 #define MLOG_FILTER_TAG_MAX_LEN 15       // 标签最大长度
 #define MLOG_FILTER_TAG_LVL_MAX_NUM 5    // 标签级别过滤器最大数量
 ```

@@ -21,13 +21,11 @@
 
 #define MLOG_OUTPUT_LVL       MLOG_LVL_VERBOSE /* 设置静态输出日志级别。范围：从 MLOG_LVL_ASSERT 到 MLOG_LVL_VERBOSE */
 #define MLOG_LINE_BUF_SIZE    256              /* 每行日志的缓冲区大小 */
-#define MLOG_LINE_NUM_MAX_LEN 5                /* 每行日志的行号最大长度 */
 #define MLOG_FILTER_TAG_MAX_LEN     15         /* 输出过滤器的标签最大长度 */
 #define MLOG_FILTER_TAG_LVL_MAX_NUM 5          /* 输出过滤器的标签级别最大数量 */
 #define MLOG_NEWLINE_SIGN           "\n"       /* 输出换行符 */
 
 /*---------------------------------------------------------------------------*/
-// #define USE_RTT_COLOR
 /* 使能日志颜色 */
 #define MLOG_COLOR_ENABLE
 /* 日志颜色配置 */
@@ -57,7 +55,7 @@
 
 /*---------------------------------------------------------------------------*/
 /* 内部使用的字符串操作函数 */
-#define MLOG_STRCPY mlog_strcpy
+#define MLOG_STRCPY mlog_strcpy_safe
 
 
 #endif /* MLOG_CFG_H_ */

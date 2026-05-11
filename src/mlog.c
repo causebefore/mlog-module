@@ -80,10 +80,6 @@ extern void mlog_buf_output(const char* log, size_t size);
     #error "Please configure static output log level (in mlog_cfg.h)"
 #endif
 
-#if !defined(MLOG_LINE_NUM_MAX_LEN)
-    #error "Please configure output line number max length (in mlog_cfg.h)"
-#endif
-
 #if !defined(MLOG_LINE_BUF_SIZE)
     #error "Please configure buffer size for every line's log (in mlog_cfg.h)"
 #endif
@@ -160,6 +156,7 @@ extern void mlog_buf_output(const char* log, size_t size);
 enum
 {
     MLOG_NEWLINE_LEN = sizeof(MLOG_NEWLINE_SIGN) - 1U,
+    MLOG_LINE_NUM_BUF_SIZE = sizeof(long) * 3U + 2U,
 #ifdef MLOG_COLOR_ENABLE
     MLOG_LINE_BUF_MIN_SIZE = MLOG_NEWLINE_LEN + (sizeof(CSI_END) - 1U),
 #else
@@ -264,7 +261,7 @@ static inline void output_log_line(const char* log, size_t len)
 }
 
 /* optimized string helpers (bounded copy) */
-size_t mlog_strcpy(size_t cur_len, char* dst, const char* src)
+size_t mlog_strcpy_safe(size_t cur_len, char* dst, const char* src)
 {
     const char* src_old = src;
 
@@ -714,7 +711,6 @@ void mlog_raw_output(const char* format, ...)
     output_log_line(s_log_buf, log_len);
     mlog_output_unlock();
     va_end(args);
-    ;
 }
 
 /**
@@ -840,7 +836,7 @@ static size_t fmt_header_source(uint8_t level, const char* file, const char* fun
 
     if (GET_FMT_USED_INT(level, MLOG_FMT_LINE, line))
     {
-        char line_num[MLOG_LINE_NUM_MAX_LEN + 1] = {0};
+        char line_num[MLOG_LINE_NUM_BUF_SIZE] = {0};
         snprintf(line_num, sizeof(line_num), "%ld", line);
         log_len += MLOG_STRCPY(log_len, s_log_buf + log_len, line_num);
         if (GET_FMT_USED_PTR(level, MLOG_FMT_FUNC, func))
