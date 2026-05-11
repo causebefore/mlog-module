@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -242,6 +243,7 @@ def capture_loop(args: argparse.Namespace, paths: SessionPaths, foreground: bool
     try:
         while not stop_requested:
             if paths.stop_request.exists():
+                stop_requested = True
                 break
             try:
                 if ser is None:
@@ -279,12 +281,12 @@ def capture_loop(args: argparse.Namespace, paths: SessionPaths, foreground: bool
                 ser.close()
             except Exception:
                 pass
-        if paths.stop_request.exists():
+        if stop_requested and paths.stop_request.exists():
             try:
                 paths.stop_request.unlink()
             except OSError:
                 pass
-        writer.close("stopped" if stop_requested or paths.stop_request.exists() else "stopped")
+        writer.close("stopped" if stop_requested else "exited")
     return 0
 
 
@@ -393,7 +395,11 @@ def command_tail(args: argparse.Namespace) -> int:
         return 3
     jsonl_path = Path(meta["files"]["jsonl"])
     try:
-        lines = jsonl_path.read_text(encoding="utf-8").splitlines()[-args.lines :]
+        tail_lines: deque[str] = deque(maxlen=max(args.lines, 0))
+        with jsonl_path.open("r", encoding="utf-8") as jsonl_file:
+            for line in jsonl_file:
+                tail_lines.append(line.rstrip("\r\n"))
+        lines = list(tail_lines)
     except OSError as exc:
         human_or_json({"ok": False, "error": str(exc)}, args.as_json)
         return 4
