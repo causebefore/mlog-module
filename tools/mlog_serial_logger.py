@@ -488,10 +488,14 @@ def command_start(args: argparse.Namespace) -> int:
     return 0
 
 
-def add_common_serial_args(parser: argparse.ArgumentParser) -> None:
+def add_common_serial_args(parser: argparse.ArgumentParser, *, session_required: bool = False) -> None:
     parser.add_argument("--port", required=True, help="Serial port, for example COM3 or loop://")
     parser.add_argument("--baud", required=True, type=int, help="Serial baud rate")
-    parser.add_argument("--session", help="Session name; defaults to timestamp plus port")
+    parser.add_argument(
+        "--session",
+        required=session_required,
+        help="Session name; defaults to timestamp plus port",
+    )
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="Serial read timeout in seconds")
     parser.add_argument(
         "--reconnect-interval",
@@ -547,7 +551,7 @@ def build_parser() -> argparse.ArgumentParser:
     tail_p.set_defaults(func=command_tail)
 
     worker_p = subparsers.add_parser("_worker", help=argparse.SUPPRESS)
-    add_common_serial_args(worker_p)
+    add_common_serial_args(worker_p, session_required=True)
     worker_p.set_defaults(func=command_worker)
     subparsers._choices_actions = [
         action for action in subparsers._choices_actions if action.dest != "_worker"
