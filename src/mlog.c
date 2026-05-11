@@ -157,6 +157,18 @@ extern void mlog_buf_output(const char* log, size_t size);
     #endif
 #endif /* MLOG_COLOR_ENABLE */
 
+enum
+{
+    MLOG_NEWLINE_LEN = sizeof(MLOG_NEWLINE_SIGN) - 1U,
+#ifdef MLOG_COLOR_ENABLE
+    MLOG_LINE_BUF_MIN_SIZE = MLOG_NEWLINE_LEN + (sizeof(CSI_END) - 1U),
+#else
+    MLOG_LINE_BUF_MIN_SIZE = MLOG_NEWLINE_LEN,
+#endif
+};
+
+typedef char mlog_line_buf_size_must_fit_tail[(MLOG_LINE_BUF_SIZE >= MLOG_LINE_BUF_MIN_SIZE) ? 1 : -1];
+
 /* 内部结构体定义（对外隐藏实现细节） */
 
 /* 按标签过滤的级别条目 */
@@ -202,7 +214,7 @@ static const char* s_level_output_info[] = {
 };
 
 /* compile-time constants to avoid repeated strlen() calls */
-#define NEWLINE_LEN (sizeof(MLOG_NEWLINE_SIGN) - 1)
+#define NEWLINE_LEN MLOG_NEWLINE_LEN
 #ifdef MLOG_COLOR_ENABLE
     #define CSI_START_LEN (sizeof(CSI_START) - 1)
     #define CSI_END_LEN   (sizeof(CSI_END) - 1)
