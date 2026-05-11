@@ -506,7 +506,7 @@ def add_common_serial_args(parser: argparse.ArgumentParser, *, session_required:
     parser.add_argument("--read-size", type=int, default=256, help="Maximum bytes to read per serial call")
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(*, include_worker: bool = False) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Agent-friendly serial logger for MLog output.")
     parser.add_argument("--root", help="Project root for logs/ and .mlog/; defaults to current directory")
     subparsers = parser.add_subparsers(
@@ -550,19 +550,18 @@ def build_parser() -> argparse.ArgumentParser:
     tail_p.add_argument("--json", dest="as_json", action="store_true", help="Print machine-readable JSON")
     tail_p.set_defaults(func=command_tail)
 
-    worker_p = subparsers.add_parser("_worker", help=argparse.SUPPRESS)
-    add_common_serial_args(worker_p, session_required=True)
-    worker_p.set_defaults(func=command_worker)
-    subparsers._choices_actions = [
-        action for action in subparsers._choices_actions if action.dest != "_worker"
-    ]
+    if include_worker:
+        worker_p = subparsers.add_parser("_worker", help=argparse.SUPPRESS)
+        add_common_serial_args(worker_p, session_required=True)
+        worker_p.set_defaults(func=command_worker)
 
     return parser
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+    raw_args = list(sys.argv[1:] if argv is None else argv)
+    parser = build_parser(include_worker="_worker" in raw_args)
+    args = parser.parse_args(raw_args)
     try:
         return int(args.func(args))
     except RuntimeError as exc:
