@@ -248,36 +248,42 @@ extern "C"
     #define loga(...)  mlog_a(LOG_TAG, __VA_ARGS__)
 #else
     #define log_a(...) ((void) 0)
+    #define loga(...)  ((void) 0)
 #endif
 #if LOG_LVL >= MLOG_LVL_ERROR
     #define log_e(...) mlog_e(LOG_TAG, __VA_ARGS__)
     #define loge(...)  mlog_e(LOG_TAG, __VA_ARGS__)
 #else
     #define log_e(...) ((void) 0)
+    #define loge(...)  ((void) 0)
 #endif
 #if LOG_LVL >= MLOG_LVL_WARN
     #define log_w(...) mlog_w(LOG_TAG, __VA_ARGS__)
     #define logw(...)  mlog_w(LOG_TAG, __VA_ARGS__)
 #else
     #define log_w(...) ((void) 0)
+    #define logw(...)  ((void) 0)
 #endif
 #if LOG_LVL >= MLOG_LVL_INFO
     #define log_i(...) mlog_i(LOG_TAG, __VA_ARGS__)
     #define logi(...)  mlog_i(LOG_TAG, __VA_ARGS__)
 #else
     #define log_i(...) ((void) 0)
+    #define logi(...)  ((void) 0)
 #endif
 #if LOG_LVL >= MLOG_LVL_DEBUG
     #define log_d(...) mlog_d(LOG_TAG, __VA_ARGS__)
     #define logd(...)  mlog_d(LOG_TAG, __VA_ARGS__)
 #else
     #define log_d(...) ((void) 0)
+    #define logd(...)  ((void) 0)
 #endif
 #if LOG_LVL >= MLOG_LVL_VERBOSE
     #define log_v(...) mlog_v(LOG_TAG, __VA_ARGS__)
     #define logv(...)  mlog_v(LOG_TAG, __VA_ARGS__)
 #else
     #define log_v(...) ((void) 0)
+    #define logv(...)  ((void) 0)
 #endif
 
 /* Optional assert API short definition */

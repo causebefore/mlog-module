@@ -419,6 +419,7 @@ void mlog_stop(void)
     mlog_set_output_enabled(false);
 
 #if defined(MLOG_BUF_OUTPUT_ENABLE)
+    mlog_flush();
     mlog_buf_enabled(false);
 #endif
 }
@@ -1022,7 +1023,7 @@ void mlog_hexdump(const char* name, uint8_t width, const void* buf, uint16_t siz
     }
 
     /* level filter */
-    if (MLOG_LVL_DEBUG > s_mlog.filter.level)
+    if (MLOG_LVL_DEBUG > s_mlog.filter.level || MLOG_LVL_DEBUG > mlog_get_filter_tag_lvl(name))
     {
         return;
     }

@@ -18,6 +18,7 @@ from typing import Any, Optional
 
 
 ANSI_RE = re.compile(rb"\x1b\[[0-?]*[ -/]*[@-~]")
+SESSION_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 DEFAULT_TIMEOUT = 0.2
 DEFAULT_RECONNECT_INTERVAL = 2.0
 STALE_SECONDS = 5.0
@@ -48,6 +49,14 @@ def sanitize_token(value: str) -> str:
 def make_session_name(port: str) -> str:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{stamp}_{sanitize_token(port)}"
+
+
+def validate_session_name(session: Optional[str]) -> Optional[str]:
+    if session is None:
+        return None
+    if not SESSION_RE.fullmatch(session):
+        raise RuntimeError("invalid session name: use only letters, digits, '_', '.', and '-'")
+    return session
 
 
 def resolve_root(root: Optional[str]) -> Path:
@@ -356,7 +365,7 @@ def command_list(args: argparse.Namespace) -> int:
 
 def command_status(args: argparse.Namespace) -> int:
     root = resolve_root(args.root)
-    meta, error = select_session(root, args.session)
+    meta, error = select_session(root, validate_session_name(args.session))
     if error:
         human_or_json({"ok": False, "error": error}, args.as_json)
         return 3
@@ -366,7 +375,7 @@ def command_status(args: argparse.Namespace) -> int:
 
 def command_stop(args: argparse.Namespace) -> int:
     root = resolve_root(args.root)
-    meta, error = select_session(root, args.session)
+    meta, error = select_session(root, validate_session_name(args.session))
     if error:
         human_or_json({"ok": False, "error": error}, args.as_json)
         return 3
@@ -389,7 +398,7 @@ def command_stop(args: argparse.Namespace) -> int:
 
 def command_tail(args: argparse.Namespace) -> int:
     root = resolve_root(args.root)
-    meta, error = select_session(root, args.session)
+    meta, error = select_session(root, validate_session_name(args.session))
     if error:
         human_or_json({"ok": False, "error": error}, args.as_json)
         return 3
@@ -404,7 +413,12 @@ def command_tail(args: argparse.Namespace) -> int:
         human_or_json({"ok": False, "error": str(exc)}, args.as_json)
         return 4
     if args.as_json:
-        print_json({"ok": True, "session": meta.get("session"), "records": [json.loads(line) for line in lines]})
+        try:
+            records = [json.loads(line) for line in lines]
+        except json.JSONDecodeError as exc:
+            human_or_json({"ok": False, "error": f"invalid jsonl record: {exc}"}, args.as_json)
+            return 4
+        print_json({"ok": True, "session": meta.get("session"), "records": records})
     else:
         for line in lines:
             try:
@@ -415,22 +429,23 @@ def command_tail(args: argparse.Namespace) -> int:
 
 
 def command_run(args: argparse.Namespace) -> int:
-    serial_module()
     root = resolve_root(args.root)
-    session = args.session or make_session_name(args.port)
+    session = validate_session_name(args.session) or make_session_name(args.port)
+    serial_module()
     return capture_loop(args, build_session_paths(root, session), foreground=True)
 
 
 def command_worker(args: argparse.Namespace) -> int:
-    serial_module()
     root = resolve_root(args.root)
-    return capture_loop(args, build_session_paths(root, args.session), foreground=False)
+    session = validate_session_name(args.session)
+    serial_module()
+    return capture_loop(args, build_session_paths(root, session), foreground=False)
 
 
 def command_start(args: argparse.Namespace) -> int:
-    serial_module()
     root = resolve_root(args.root)
-    session = args.session or make_session_name(args.port)
+    session = validate_session_name(args.session) or make_session_name(args.port)
+    serial_module()
     paths = build_session_paths(root, session)
     ensure_dirs(paths)
     if paths.state_json.exists() or paths.meta_json.exists():
