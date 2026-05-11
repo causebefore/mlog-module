@@ -194,8 +194,8 @@ void mlog_buf_output(const char* log, size_t size)
 }
 
 /**
- * flush all buffered logs to output device
- * 优化：移除无用的memset
+ * flush all buffered logs to output device in FIFO order
+ * 按 FIFO 顺序输出环形缓冲区中的全部日志，并在刷新完成后复位读写位置
  */
 void mlog_flush(void)
 {
